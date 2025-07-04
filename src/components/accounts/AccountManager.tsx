@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Bank, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Ban as Bank, CreditCard } from 'lucide-react';
 
 export const AccountManager: React.FC = () => {
   const { accounts, deleteAccount, darkMode } = useStore();
