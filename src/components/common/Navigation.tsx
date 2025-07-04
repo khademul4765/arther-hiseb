@@ -22,35 +22,63 @@ export const Navigation: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className={`fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40`}>
-      <div className="p-4">
-        <ul className="space-y-2">
-          {navigationItems.map((item) => {
+    <>
+      {/* Desktop Navigation */}
+      <nav className={`hidden md:block fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transition-transform duration-300 ease-in-out z-40`}>
+        <div className="p-4">
+          <ul className="space-y-2">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <motion.li
+                  key={item.path}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <NavLink
+                    to={item.path}
+                    className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-green-600 text-white'
+                        : darkMode
+                        ? 'text-gray-300 hover:bg-gray-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <item.icon size={20} />
+                    <span className="font-medium">{item.name}</span>
+                  </NavLink>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-40`}>
+        <div className="grid grid-cols-5 gap-1 p-2">
+          {navigationItems.slice(0, 5).map((item) => {
             const isActive = location.pathname === item.path;
             return (
-              <motion.li
+              <NavLink
                 key={item.path}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                to={item.path}
+                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-green-600 text-white'
+                    : darkMode
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-700'
+                }`}
               >
-                <NavLink
-                  to={item.path}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-green-600 text-white'
-                      : darkMode
-                      ? 'text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.name}</span>
-                </NavLink>
-              </motion.li>
+                <item.icon size={18} />
+                <span className="text-xs mt-1 font-medium">{item.name.split(' ')[0]}</span>
+              </NavLink>
             );
           })}
-        </ul>
-      </div>
-    </nav>
+        </div>
+      </nav>
+    </>
   );
 };

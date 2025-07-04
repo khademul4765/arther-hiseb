@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { Bell, Moon, Sun, Settings, LogOut } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Bell, Moon, Sun, Settings, LogOut, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 
 export const Header: React.FC = () => {
   const { darkMode, toggleDarkMode, notifications, user, logout } = useStore();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = async () => {
@@ -23,24 +24,36 @@ export const Header: React.FC = () => {
       <div className="px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className={`md:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            >
+              {showMobileMenu ? (
+                <X size={20} className={darkMode ? 'text-white' : 'text-gray-900'} />
+              ) : (
+                <Menu size={20} className={darkMode ? 'text-white' : 'text-gray-900'} />
+              )}
+            </button>
+
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">৳</span>
               </div>
               <div>
-                <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  অর্থ হিসেব
+                <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  অর্থের হিসেব
                 </h1>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'} hidden md:block`}>
                   by Khademul Bashar
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             {user && (
-              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} hidden md:block`}>
                 স্বাগতম, {user.name}
               </div>
             )}
@@ -70,7 +83,7 @@ export const Header: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} hover:bg-opacity-80`}
+              className={`hidden md:block p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} hover:bg-opacity-80`}
             >
               <Settings size={20} />
             </motion.button>
@@ -87,6 +100,19 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {showMobileMenu && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setShowMobileMenu(false)}
+          />
+        )}
+      </AnimatePresence>
     </header>
   );
 };

@@ -9,6 +9,7 @@ interface TransactionFormProps {
   onClose: () => void;
   onSubmit: () => void;
   transaction?: Transaction;
+  defaultType?: 'income' | 'expense' | 'transfer';
 }
 
 interface FormData {
@@ -26,13 +27,14 @@ interface FormData {
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   onClose,
   onSubmit,
-  transaction
+  transaction,
+  defaultType = 'expense'
 }) => {
   const { addTransaction, updateTransaction, categories, accounts, darkMode } = useStore();
   const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
     defaultValues: transaction ? {
       amount: transaction.amount,
-      type: transaction.type,
+      type: transaction.type as 'income' | 'expense',
       category: transaction.category,
       accountId: transaction.accountId,
       date: transaction.date.toISOString().split('T')[0],
@@ -41,7 +43,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       note: transaction.note,
       tags: transaction.tags.join(', ')
     } : {
-      type: 'expense',
+      type: defaultType === 'transfer' ? 'expense' : defaultType,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
       accountId: accounts[0]?.id || ''
@@ -95,10 +97,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <h2 className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {transaction ? 'লেনদেন সম্পাদনা' : 'নতুন লেনদেন'}
           </h2>
           <button
@@ -119,7 +121,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               type="number"
               step="0.01"
               {...register('amount', { required: 'পরিমাণ আবশ্যক', min: 0.01 })}
-              className={`w-full px-3 py-2 rounded-lg border ${
+              className={`w-full px-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
@@ -133,20 +135,42 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Type */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               ধরন *
             </label>
-            <select
-              {...register('type', { required: 'ধরন নির্বাচন করুন' })}
-              className={`w-full px-3 py-2 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-            >
-              <option value="expense">খরচ</option>
-              <option value="income">আয়</option>
-            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                selectedType === 'expense' 
+                  ? darkMode ? 'border-red-500 bg-red-900/20' : 'border-red-500 bg-red-50'
+                  : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
+              }`}>
+                <input 
+                  type="radio" 
+                  value="expense" 
+                  {...register('type', { required: 'ধরন নির্বাচন করুন' })} 
+                  className="sr-only" 
+                />
+                <span className={`font-medium ${selectedType === 'expense' ? 'text-red-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  খরচ
+                </span>
+              </label>
+              
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                selectedType === 'income' 
+                  ? darkMode ? 'border-green-500 bg-green-900/20' : 'border-green-500 bg-green-50'
+                  : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
+              }`}>
+                <input 
+                  type="radio" 
+                  value="income" 
+                  {...register('type', { required: 'ধরন নির্বাচন করুন' })} 
+                  className="sr-only" 
+                />
+                <span className={`font-medium ${selectedType === 'income' ? 'text-green-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  আয়
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Account */}
@@ -156,7 +180,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </label>
             <select
               {...register('accountId', { required: 'একাউন্ট নির্বাচন করুন' })}
-              className={`w-full px-3 py-2 rounded-lg border ${
+              className={`w-full px-3 py-3 md:py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
@@ -191,7 +215,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </label>
             <select
               {...register('category', { required: 'ক্যাটেগরি নির্বাচন করুন' })}
-              className={`w-full px-3 py-2 rounded-lg border ${
+              className={`w-full px-3 py-3 md:py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
@@ -224,11 +248,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 তারিখ *
               </label>
               <div className="relative">
-                <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                <Calendar size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 <input
                   type="date"
                   {...register('date', { required: 'তারিখ আবশ্যক' })}
-                  className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
@@ -241,11 +265,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 সময় *
               </label>
               <div className="relative">
-                <Clock size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                <Clock size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 <input
                   type="time"
                   {...register('time', { required: 'সময় আবশ্যক' })}
-                  className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
@@ -261,11 +285,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               ব্যক্তি
             </label>
             <div className="relative">
-              <User size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <User size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <input
                 type="text"
                 {...register('person')}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -301,11 +325,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               ট্যাগ
             </label>
             <div className="relative">
-              <Tag size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <Tag size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <input
                 type="text"
                 {...register('tags')}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -320,7 +344,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className={`flex-1 px-4 py-2 rounded-lg border ${
+              className={`flex-1 px-4 py-3 md:py-2 rounded-lg border ${
                 darkMode 
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                   : 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -330,7 +354,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              className="flex-1 px-4 py-3 md:py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium"
             >
               {transaction ? 'আপডেট করুন' : 'সংরক্ষণ করুন'}
             </button>
