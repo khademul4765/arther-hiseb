@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, ArrowRightLeft, DollarSign, FileText, Wallet, Bank, CreditCard } from 'lucide-react';
+import { X, ArrowRightLeft, DollarSign, FileText, Wallet, Ban as Bank, CreditCard } from 'lucide-react';
 
 interface TransferFormProps {
   onClose: () => void;

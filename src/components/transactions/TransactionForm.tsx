@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Calendar, Clock, User, FileText, Tag, Wallet, Bank, CreditCard } from 'lucide-react';
+import { X, Calendar, Clock, User, FileText, Tag, Wallet, Ban as Bank, CreditCard } from 'lucide-react';
 import { Transaction } from '../../types';
 
 interface TransactionFormProps {
