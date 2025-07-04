@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { TransactionForm } from '../transactions/TransactionForm';
+import { TransferForm } from '../accounts/TransferForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
 
@@ -8,11 +9,16 @@ export const FloatingActionButton: React.FC = () => {
   const { darkMode } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [transactionType, setTransactionType] = useState<'income' | 'expense' | 'transfer'>('expense');
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
 
   const handleQuickAction = (type: 'income' | 'expense' | 'transfer') => {
-    setTransactionType(type);
-    setShowTransactionForm(true);
+    if (type === 'transfer') {
+      setShowTransferForm(true);
+    } else {
+      setTransactionType(type);
+      setShowTransactionForm(true);
+    }
     setIsOpen(false);
   };
 
@@ -108,6 +114,14 @@ export const FloatingActionButton: React.FC = () => {
           onClose={() => setShowTransactionForm(false)}
           onSubmit={() => setShowTransactionForm(false)}
           defaultType={transactionType}
+        />
+      )}
+
+      {/* Transfer Form */}
+      {showTransferForm && (
+        <TransferForm
+          onClose={() => setShowTransferForm(false)}
+          onSubmit={() => setShowTransferForm(false)}
         />
       )}
     </>

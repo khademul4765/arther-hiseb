@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, CreditCard, PieChart, Target, Users, Settings, TrendingUp, Receipt, User, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const navigationItems = [
   { path: '/', name: 'ড্যাশবোর্ড', icon: Home },
@@ -20,6 +20,24 @@ const navigationItems = [
 export const Navigation: React.FC = () => {
   const { darkMode } = useStore();
   const location = useLocation();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Listen for mobile menu toggle from header
+  useEffect(() => {
+    const handleMobileMenuToggle = (event: CustomEvent) => {
+      setShowMobileMenu(event.detail.isOpen);
+    };
+
+    window.addEventListener('mobileMenuToggle', handleMobileMenuToggle as EventListener);
+    return () => {
+      window.removeEventListener('mobileMenuToggle', handleMobileMenuToggle as EventListener);
+    };
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [location.pathname]);
 
   return (
     <>
@@ -54,6 +72,49 @@ export const Navigation: React.FC = () => {
           </ul>
         </div>
       </nav>
+
+      {/* Mobile Sidebar Navigation */}
+      <AnimatePresence>
+        {showMobileMenu && (
+          <motion.nav
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'tween', duration: 0.3 }}
+            className={`md:hidden fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r z-50 overflow-y-auto`}
+          >
+            <div className="p-4">
+              <ul className="space-y-2">
+                {navigationItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <motion.li
+                      key={item.path}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setShowMobileMenu(false)}
+                        className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-green-600 text-white'
+                            : darkMode
+                            ? 'text-gray-300 hover:bg-gray-700'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <item.icon size={20} />
+                        <span className="font-medium">{item.name}</span>
+                      </NavLink>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-40`}>

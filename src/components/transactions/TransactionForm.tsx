@@ -9,7 +9,7 @@ interface TransactionFormProps {
   onClose: () => void;
   onSubmit: () => void;
   transaction?: Transaction;
-  defaultType?: 'income' | 'expense' | 'transfer';
+  defaultType?: 'income' | 'expense';
 }
 
 interface FormData {
@@ -43,7 +43,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       note: transaction.note,
       tags: transaction.tags.join(', ')
     } : {
-      type: defaultType === 'transfer' ? 'expense' : defaultType,
+      type: defaultType,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
       accountId: accounts[0]?.id || ''
