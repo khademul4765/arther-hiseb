@@ -1,0 +1,255 @@
+import React from 'react';
+import { useStore } from '../../store/useStore';
+import { useForm } from 'react-hook-form';
+import { motion } from 'framer-motion';
+import { X, ArrowRightLeft, DollarSign, FileText, Wallet, Bank, CreditCard } from 'lucide-react';
+
+interface TransferFormProps {
+  onClose: () => void;
+  onSubmit: () => void;
+}
+
+interface FormData {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  note: string;
+}
+
+export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit }) => {
+  const { accounts, transferMoney, darkMode } = useStore();
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>();
+
+  const fromAccountId = watch('fromAccountId');
+  const toAccountId = watch('toAccountId');
+  const amount = watch('amount');
+
+  const fromAccount = accounts.find(a => a.id === fromAccountId);
+  const toAccount = accounts.find(a => a.id === toAccountId);
+
+  const onFormSubmit = (data: FormData) => {
+    transferMoney(data.fromAccountId, data.toAccountId, data.amount, data.note);
+    onSubmit();
+  };
+
+  const getAccountIcon = (type: string) => {
+    switch (type) {
+      case 'cash':
+        return <Wallet size={16} className="text-green-600" />;
+      case 'bank':
+        return <Bank size={16} className="text-blue-600" />;
+      case 'credit':
+        return <CreditCard size={16} className="text-purple-600" />;
+      default:
+        return <Wallet size={16} />;
+    }
+  };
+
+  const availableToAccounts = accounts.filter(a => a.id !== fromAccountId);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center`}>
+            <ArrowRightLeft size={20} className="mr-2" />
+            টাকা ট্রান্সফার
+          </h2>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+          >
+            <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+          {/* From Account */}
+          <div>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              কোন একাউন্ট থেকে *
+            </label>
+            <select
+              {...register('fromAccountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            >
+              <option value="">একাউন্ট নির্বাচন করুন</option>
+              {accounts.map(account => (
+                <option key={account.id} value={account.id}>
+                  {account.name} - ৳{account.balance.toLocaleString()}
+                </option>
+              ))}
+            </select>
+            {errors.fromAccountId && (
+              <p className="text-red-500 text-sm mt-1">{errors.fromAccountId.message}</p>
+            )}
+            {fromAccount && (
+              <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className="flex items-center space-x-2">
+                  {getAccountIcon(fromAccount.type)}
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    বর্তমান ব্যালেন্স: ৳{fromAccount.balance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* To Account */}
+          <div>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              কোন একাউন্টে *
+            </label>
+            <select
+              {...register('toAccountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            >
+              <option value="">একাউন্ট নির্বাচন করুন</option>
+              {availableToAccounts.map(account => (
+                <option key={account.id} value={account.id}>
+                  {account.name} - ৳{account.balance.toLocaleString()}
+                </option>
+              ))}
+            </select>
+            {errors.toAccountId && (
+              <p className="text-red-500 text-sm mt-1">{errors.toAccountId.message}</p>
+            )}
+            {toAccount && (
+              <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className="flex items-center space-x-2">
+                  {getAccountIcon(toAccount.type)}
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    বর্তমান ব্যালেন্স: ৳{toAccount.balance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              পরিমাণ *
+            </label>
+            <div className="relative">
+              <DollarSign size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <input
+                type="number"
+                step="0.01"
+                {...register('amount', { 
+                  required: 'পরিমাণ আবশ্যক', 
+                  min: { value: 0.01, message: 'পরিমাণ ০ এর চেয়ে বেশি হতে হবে' },
+                  max: fromAccount ? { value: fromAccount.balance, message: 'অপর্যাপ্ত ব্যালেন্স' } : undefined
+                })}
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="০.০০"
+              />
+            </div>
+            {errors.amount && (
+              <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>
+            )}
+            {fromAccount && amount > fromAccount.balance && (
+              <p className="text-red-500 text-sm mt-1">অপর্যাপ্ত ব্যালেন্স</p>
+            )}
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              নোট
+            </label>
+            <div className="relative">
+              <FileText size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <textarea
+                {...register('note')}
+                rows={3}
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="ট্রান্সফারের কারণ লিখুন..."
+              />
+            </div>
+          </div>
+
+          {/* Transfer Summary */}
+          {fromAccount && toAccount && amount > 0 && (
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-blue-900/20 border border-blue-500' : 'bg-blue-50 border border-blue-200'}`}>
+              <h4 className={`font-medium ${darkMode ? 'text-blue-300' : 'text-blue-800'} mb-2`}>
+                ট্রান্সফার সারাংশ:
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>থেকে:</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>{fromAccount.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>যেখানে:</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>{toAccount.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>পরিমাণ:</span>
+                  <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>৳{amount.toLocaleString()}</span>
+                </div>
+                <hr className={darkMode ? 'border-blue-700' : 'border-blue-300'} />
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>ট্রান্সফারের পর {fromAccount.name}:</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>৳{(fromAccount.balance - amount).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>ট্রান্সফারের পর {toAccount.name}:</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>৳{(toAccount.balance + amount).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`flex-1 px-4 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              বাতিল
+            </button>
+            <button
+              type="submit"
+              disabled={!fromAccount || !toAccount || !amount || amount > (fromAccount?.balance || 0)}
+              className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ট্রান্সফার করুন
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+};

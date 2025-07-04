@@ -7,6 +7,7 @@ import { useStore } from './store/useStore';
 import { AuthForm } from './components/auth/AuthForm';
 import { Layout } from './components/common/Layout';
 import { Dashboard } from './components/dashboard/Dashboard';
+import { AccountManager } from './components/accounts/AccountManager';
 import { TransactionList } from './components/transactions/TransactionList';
 import { CategoryManager } from './components/categories/CategoryManager';
 import { BudgetManager } from './components/budgets/BudgetManager';
@@ -59,6 +60,7 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/accounts" element={<AccountManager />} />
             <Route path="/transactions" element={<TransactionList />} />
             <Route path="/categories" element={<CategoryManager />} />
             <Route path="/budgets" element={<BudgetManager />} />

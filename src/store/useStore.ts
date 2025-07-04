@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Transaction, Category, Budget, Goal, Loan, Notification, User } from '../types';
+import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
 
 interface StoreState {
   user: User | null;
+  accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
   budgets: Budget[];
@@ -15,6 +16,12 @@ interface StoreState {
   // Auth Actions
   setUser: (user: User | null) => void;
   logout: () => void;
+  
+  // Account Actions
+  addAccount: (account: Omit<Account, 'id' | 'userId' | 'createdAt'>) => void;
+  updateAccount: (id: string, updates: Partial<Account>) => void;
+  deleteAccount: (id: string) => void;
+  transferMoney: (fromAccountId: string, toAccountId: string, amount: number, note?: string) => void;
   
   // Transaction Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
@@ -53,6 +60,7 @@ interface StoreState {
   
   // Utility Actions
   initializeDefaultCategories: (userId: string) => void;
+  initializeDefaultAccounts: (userId: string) => void;
   clearUserData: () => void;
   loadUserData: (userId: string) => void;
 }
@@ -61,6 +69,7 @@ export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       user: null,
+      accounts: [],
       transactions: [],
       categories: [],
       budgets: [],
@@ -81,6 +90,12 @@ export const useStore = create<StoreState>()(
           if (userCategories.length === 0) {
             get().initializeDefaultCategories(user.id);
           }
+
+          // Initialize default accounts if none exist for this user
+          const userAccounts = get().accounts.filter(a => a.userId === user.id);
+          if (userAccounts.length === 0) {
+            get().initializeDefaultAccounts(user.id);
+          }
         }
       },
 
@@ -93,12 +108,116 @@ export const useStore = create<StoreState>()(
         // Filter data to show only current user's data
         const allState = get();
         set({
+          accounts: allState.accounts.filter(a => a.userId === userId),
           transactions: allState.transactions.filter(t => t.userId === userId),
           categories: allState.categories.filter(c => c.userId === userId),
           budgets: allState.budgets.filter(b => b.userId === userId),
           goals: allState.goals.filter(g => g.userId === userId),
           loans: allState.loans.filter(l => l.userId === userId),
           notifications: allState.notifications.filter(n => n.userId === userId),
+        });
+      },
+
+      // Account Actions
+      addAccount: (account) => {
+        const user = get().user;
+        if (!user) return;
+
+        const newAccount: Account = {
+          ...account,
+          id: Date.now().toString(),
+          userId: user.id,
+          createdAt: new Date(),
+        };
+
+        set((state) => ({
+          accounts: [...state.accounts, newAccount],
+        }));
+      },
+
+      updateAccount: (id, updates) => {
+        set((state) => ({
+          accounts: state.accounts.map((a) =>
+            a.id === id ? { ...a, ...updates } : a
+          ),
+        }));
+      },
+
+      deleteAccount: (id) => {
+        // Check if account has transactions
+        const hasTransactions = get().transactions.some(t => t.accountId === id || t.toAccountId === id);
+        if (hasTransactions) {
+          get().addNotification({
+            title: 'একাউন্ট মুছতে পারবেন না',
+            message: 'এই একাউন্টে লেনদেন রয়েছে। প্রথমে সব লেনদেন মুছুন।',
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+          return;
+        }
+
+        set((state) => ({
+          accounts: state.accounts.filter((a) => a.id !== id),
+        }));
+      },
+
+      transferMoney: (fromAccountId, toAccountId, amount, note = '') => {
+        const user = get().user;
+        if (!user) return;
+
+        const fromAccount = get().accounts.find(a => a.id === fromAccountId);
+        const toAccount = get().accounts.find(a => a.id === toAccountId);
+
+        if (!fromAccount || !toAccount) return;
+
+        if (fromAccount.balance < amount) {
+          get().addNotification({
+            title: 'অপর্যাপ্ত ব্যালেন্স',
+            message: 'একাউন্টে পর্যাপ্ত টাকা নেই।',
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+          return;
+        }
+
+        // Update account balances
+        get().updateAccount(fromAccountId, {
+          balance: fromAccount.balance - amount
+        });
+
+        get().updateAccount(toAccountId, {
+          balance: toAccount.balance + amount
+        });
+
+        // Create transfer transaction
+        const transferTransaction: Transaction = {
+          id: Date.now().toString(),
+          userId: user.id,
+          amount,
+          type: 'transfer',
+          category: 'ট্রান্সফার',
+          accountId: fromAccountId,
+          toAccountId: toAccountId,
+          date: new Date(),
+          time: new Date().toTimeString().slice(0, 5),
+          note: note || `${fromAccount.name} থেকে ${toAccount.name} এ ট্রান্সফার`,
+          tags: ['ট্রান্সফার'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        set((state) => ({
+          transactions: [...state.transactions, transferTransaction],
+        }));
+
+        get().addNotification({
+          title: 'ট্রান্সফার সফল',
+          message: `৳${amount.toLocaleString()} ${fromAccount.name} থেকে ${toAccount.name} এ ট্রান্সফার হয়েছে।`,
+          type: 'insight',
+          priority: 'low',
+          isRead: false
         });
       },
 
@@ -118,6 +237,15 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           transactions: [...state.transactions, newTransaction],
         }));
+
+        // Update account balance
+        const account = get().accounts.find(a => a.id === transaction.accountId);
+        if (account) {
+          const balanceChange = transaction.type === 'income' ? transaction.amount : -transaction.amount;
+          get().updateAccount(account.id, {
+            balance: account.balance + balanceChange
+          });
+        }
 
         // Update budget spent amount
         const budgets = get().budgets.filter(b => b.userId === user.id);
@@ -144,11 +272,37 @@ export const useStore = create<StoreState>()(
       },
 
       updateTransaction: (id, updates) => {
+        const user = get().user;
+        if (!user) return;
+
+        const oldTransaction = get().transactions.find(t => t.id === id);
+        if (!oldTransaction) return;
+
+        // Revert old transaction's effect on account balance
+        const oldAccount = get().accounts.find(a => a.id === oldTransaction.accountId);
+        if (oldAccount) {
+          const oldBalanceChange = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
+          get().updateAccount(oldAccount.id, {
+            balance: oldAccount.balance + oldBalanceChange
+          });
+        }
+
+        // Update transaction
         set((state) => ({
           transactions: state.transactions.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
           ),
         }));
+
+        // Apply new transaction's effect on account balance
+        const updatedTransaction = { ...oldTransaction, ...updates };
+        const newAccount = get().accounts.find(a => a.id === updatedTransaction.accountId);
+        if (newAccount) {
+          const newBalanceChange = updatedTransaction.type === 'income' ? updatedTransaction.amount : -updatedTransaction.amount;
+          get().updateAccount(newAccount.id, {
+            balance: newAccount.balance + newBalanceChange
+          });
+        }
       },
 
       deleteTransaction: (id) => {
@@ -156,8 +310,29 @@ export const useStore = create<StoreState>()(
         if (!user) return;
 
         const transaction = get().transactions.find(t => t.id === id);
-        if (transaction && transaction.type === 'expense') {
-          // Update budget spent amount
+        if (!transaction) return;
+
+        // Revert transaction's effect on account balance
+        const account = get().accounts.find(a => a.id === transaction.accountId);
+        if (account) {
+          const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
+          get().updateAccount(account.id, {
+            balance: account.balance + balanceChange
+          });
+
+          // If it's a transfer, also update the destination account
+          if (transaction.type === 'transfer' && transaction.toAccountId) {
+            const toAccount = get().accounts.find(a => a.id === transaction.toAccountId);
+            if (toAccount) {
+              get().updateAccount(toAccount.id, {
+                balance: toAccount.balance - transaction.amount
+              });
+            }
+          }
+        }
+
+        // Update budget spent amount
+        if (transaction.type === 'expense') {
           const budgets = get().budgets.filter(b => b.userId === user.id);
           const relatedBudget = budgets.find(b => b.category === transaction.category);
           if (relatedBudget) {
@@ -412,12 +587,40 @@ export const useStore = create<StoreState>()(
         }));
       },
 
+      initializeDefaultAccounts: (userId) => {
+        const defaultAccounts: Account[] = [
+          {
+            id: `${userId}-acc-1`,
+            userId,
+            name: 'নগদ',
+            type: 'cash',
+            description: 'হাতে থাকা নগদ টাকা',
+            balance: 0,
+            createdAt: new Date()
+          },
+          {
+            id: `${userId}-acc-2`,
+            userId,
+            name: 'ব্যাংক একাউন্ট',
+            type: 'bank',
+            description: 'প্রধান ব্যাংক একাউন্ট',
+            balance: 0,
+            createdAt: new Date()
+          }
+        ];
+
+        set((state) => ({
+          accounts: [...state.accounts, ...defaultAccounts]
+        }));
+      },
+
       clearUserData: () => {
         const user = get().user;
         if (!user) return;
 
         // Only clear current user's data
         set((state) => ({
+          accounts: state.accounts.filter(a => a.userId !== user.id),
           transactions: state.transactions.filter(t => t.userId !== user.id),
           categories: state.categories.filter(c => c.userId !== user.id),
           budgets: state.budgets.filter(b => b.userId !== user.id),

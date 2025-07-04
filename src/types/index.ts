@@ -5,12 +5,24 @@ export interface User {
   createdAt: Date;
 }
 
+export interface Account {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'cash' | 'bank' | 'credit';
+  description: string;
+  balance: number;
+  createdAt: Date;
+}
+
 export interface Transaction {
   id: string;
   userId: string;
   amount: number;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'transfer';
   category: string;
+  accountId: string;
+  toAccountId?: string; // For transfers
   date: Date;
   time: string;
   person?: string;

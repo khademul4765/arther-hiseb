@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Calendar, Clock, User, FileText, Tag } from 'lucide-react';
+import { X, Calendar, Clock, User, FileText, Tag, Wallet, Bank, CreditCard } from 'lucide-react';
 import { Transaction } from '../../types';
 
 interface TransactionFormProps {
@@ -15,6 +15,7 @@ interface FormData {
   amount: number;
   type: 'income' | 'expense';
   category: string;
+  accountId: string;
   date: string;
   time: string;
   person: string;
@@ -27,12 +28,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   onSubmit,
   transaction
 }) => {
-  const { addTransaction, updateTransaction, categories, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { addTransaction, updateTransaction, categories, accounts, darkMode } = useStore();
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
     defaultValues: transaction ? {
       amount: transaction.amount,
       type: transaction.type,
       category: transaction.category,
+      accountId: transaction.accountId,
       date: transaction.date.toISOString().split('T')[0],
       time: transaction.time,
       person: transaction.person || '',
@@ -42,8 +44,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       type: 'expense',
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
+      accountId: accounts[0]?.id || ''
     }
   });
+
+  const selectedType = watch('type');
+  const selectedAccountId = watch('accountId');
 
   const onFormSubmit = (data: FormData) => {
     const transactionData = {
@@ -63,6 +69,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const expenseCategories = categories.filter(c => c.type === 'expense');
   const incomeCategories = categories.filter(c => c.type === 'income');
+  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+
+  const getAccountIcon = (type: string) => {
+    switch (type) {
+      case 'cash':
+        return <Wallet size={16} className="text-green-600" />;
+      case 'bank':
+        return <Bank size={16} className="text-blue-600" />;
+      case 'credit':
+        return <CreditCard size={16} className="text-purple-600" />;
+      default:
+        return <Wallet size={16} />;
+    }
+  };
 
   return (
     <motion.div
@@ -129,6 +149,41 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </select>
           </div>
 
+          {/* Account */}
+          <div>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              একাউন্ট *
+            </label>
+            <select
+              {...register('accountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+            >
+              <option value="">একাউন্ট নির্বাচন করুন</option>
+              {accounts.map(account => (
+                <option key={account.id} value={account.id}>
+                  {account.name} - ৳{account.balance.toLocaleString()}
+                </option>
+              ))}
+            </select>
+            {errors.accountId && (
+              <p className="text-red-500 text-sm mt-1">{errors.accountId.message}</p>
+            )}
+            {selectedAccount && (
+              <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className="flex items-center space-x-2">
+                  {getAccountIcon(selectedAccount.type)}
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    বর্তমান ব্যালেন্স: ৳{selectedAccount.balance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Category */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
@@ -143,16 +198,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
             >
               <option value="">ক্যাটেগরি নির্বাচন করুন</option>
-              {expenseCategories.map(category => (
-                <option key={category.id} value={category.name}>
-                  {category.icon} {category.name}
-                </option>
-              ))}
-              {incomeCategories.map(category => (
-                <option key={category.id} value={category.name}>
-                  {category.icon} {category.name}
-                </option>
-              ))}
+              {selectedType === 'expense' ? (
+                expenseCategories.map(category => (
+                  <option key={category.id} value={category.name}>
+                    {category.icon} {category.name}
+                  </option>
+                ))
+              ) : (
+                incomeCategories.map(category => (
+                  <option key={category.id} value={category.name}>
+                    {category.icon} {category.name}
+                  </option>
+                ))
+              )}
             </select>
             {errors.category && (
               <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
