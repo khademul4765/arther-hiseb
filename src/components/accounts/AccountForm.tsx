@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Wallet, Ban as Bank, CreditCard, FileText, DollarSign } from 'lucide-react';
+import { X, Wallet, Building2, CreditCard, FileText, DollarSign } from 'lucide-react';
 
 interface AccountFormProps {
   onClose: () => void;
@@ -47,7 +47,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
       case 'cash':
         return <Wallet size={20} className="text-green-600" />;
       case 'bank':
-        return <Bank size={20} className="text-blue-600" />;
+        return <Building2 size={20} className="text-blue-600" />;
       case 'credit':
         return <CreditCard size={20} className="text-purple-600" />;
       default:
@@ -135,7 +135,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                   {...register('type', { required: 'একাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
-                <Bank size={24} className={selectedType === 'bank' ? 'text-blue-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                <Building2 size={24} className={selectedType === 'bank' ? 'text-blue-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
                 <span className={`text-sm mt-1 ${selectedType === 'bank' ? 'text-blue-600 font-medium' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   ব্যাংক
                 </span>
@@ -189,12 +189,12 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
               প্রাথমিক ব্যালেন্স *
             </label>
             <div className="relative">
-              <DollarSign size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <span className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
               <input
                 type="number"
                 step="0.01"
                 {...register('balance', { required: 'প্রাথমিক ব্যালেন্স আবশ্যক' })}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                className={`w-full pl-8 pr-3 py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'

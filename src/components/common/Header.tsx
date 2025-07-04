@@ -54,7 +54,7 @@ export const Header: React.FC = () => {
                 <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   অর্থের হিসেব
                 </h1>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'} hidden md:block`}>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   by Khademul Bashar
                 </p>
               </div>

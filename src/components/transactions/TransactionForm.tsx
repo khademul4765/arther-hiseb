@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Calendar, Clock, User, FileText, Tag, Wallet, Ban as Bank, CreditCard } from 'lucide-react';
+import { X, Calendar, Clock, User, FileText, Tag, Wallet, Building2, CreditCard } from 'lucide-react';
 import { Transaction } from '../../types';
 
 interface TransactionFormProps {
@@ -78,7 +78,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       case 'cash':
         return <Wallet size={16} className="text-green-600" />;
       case 'bank':
-        return <Bank size={16} className="text-blue-600" />;
+        return <Building2 size={16} className="text-blue-600" />;
       case 'credit':
         return <CreditCard size={16} className="text-purple-600" />;
       default:
@@ -117,17 +117,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               পরিমাণ *
             </label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('amount', { required: 'পরিমাণ আবশ্যক', min: 0.01 })}
-              className={`w-full px-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-              placeholder="০.০০"
-            />
+            <div className="relative">
+              <span className={`absolute left-3 top-3 md:top-2.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
+              <input
+                type="number"
+                step="0.01"
+                {...register('amount', { required: 'পরিমাণ আবশ্যক', min: 0.01 })}
+                className={`w-full pl-8 pr-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                placeholder="০.০০"
+              />
+            </div>
             {errors.amount && (
               <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>
             )}

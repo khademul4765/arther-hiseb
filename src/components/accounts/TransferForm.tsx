@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, ArrowRightLeft, DollarSign, FileText, Wallet, Ban as Bank, CreditCard } from 'lucide-react';
+import { X, ArrowRightLeft, FileText, Wallet, Building2, CreditCard } from 'lucide-react';
 
 interface TransferFormProps {
   onClose: () => void;
@@ -37,7 +37,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
       case 'cash':
         return <Wallet size={16} className="text-green-600" />;
       case 'bank':
-        return <Bank size={16} className="text-blue-600" />;
+        return <Building2 size={16} className="text-blue-600" />;
       case 'credit':
         return <CreditCard size={16} className="text-purple-600" />;
       default:
@@ -150,7 +150,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
               পরিমাণ *
             </label>
             <div className="relative">
-              <DollarSign size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <span className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
               <input
                 type="number"
                 step="0.01"
@@ -159,7 +159,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
                   min: { value: 0.01, message: 'পরিমাণ ০ এর চেয়ে বেশি হতে হবে' },
                   max: fromAccount ? { value: fromAccount.balance, message: 'অপর্যাপ্ত ব্যালেন্স' } : undefined
                 })}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                className={`w-full pl-8 pr-3 py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
