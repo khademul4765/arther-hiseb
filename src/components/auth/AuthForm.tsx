@@ -19,6 +19,7 @@ export const AuthForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [registrationWarning, setRegistrationWarning] = useState(false);
   const { setUser, darkMode } = useStore();
 
   const { register, handleSubmit, formState: { errors }, watch, reset } = useForm<AuthFormData>();
@@ -34,7 +35,7 @@ export const AuthForm: React.FC = () => {
         // Login
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
-        
+
         setUser({
           id: user.uid,
           email: user.email!,
@@ -45,6 +46,12 @@ export const AuthForm: React.FC = () => {
         // Registration
         if (data.password !== data.confirmPassword) {
           setError('পাসওয়ার্ড মিলছে না');
+          return;
+        }
+
+        if (!registrationWarning) {
+          setRegistrationWarning(true);
+          setError('নিবন্ধন করার জন্য আবার চেষ্টা করুন');
           return;
         }
 
@@ -100,6 +107,7 @@ export const AuthForm: React.FC = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError('');
+    setRegistrationWarning(false);
     reset();
   };
 
@@ -118,10 +126,10 @@ export const AuthForm: React.FC = () => {
             </div>
           </div>
           <h2 className={`mt-6 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            আমার হিসেব
+            অর্থ হিসেব
           </h2>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Khademul Bashar
+            by Khademul Bashar
           </p>
           <p className={`mt-4 text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             {isLogin ? 'আপনার অ্যাকাউন্টে প্রবেশ করুন' : 'নতুন অ্যাকাউন্ট তৈরি করুন'}
@@ -145,13 +153,13 @@ export const AuthForm: React.FC = () => {
                   <User size={20} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                   <input
                     type="text"
-                    {...register('name', { 
+                    {...register('name', {
                       required: !isLogin ? 'নাম আবশ্যক' : false,
                       minLength: { value: 2, message: 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' }
                     })}
                     className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                      darkMode 
-                        ? 'bg-gray-800 border-gray-600 text-white' 
+                      darkMode
+                        ? 'bg-gray-800 border-gray-600 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
                     } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                     placeholder="আপনার নাম লিখুন"
@@ -171,7 +179,7 @@ export const AuthForm: React.FC = () => {
                 <Mail size={20} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 <input
                   type="email"
-                  {...register('email', { 
+                  {...register('email', {
                     required: 'ইমেইল আবশ্যক',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -179,8 +187,8 @@ export const AuthForm: React.FC = () => {
                     }
                   })}
                   className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-600 text-white' 
+                    darkMode
+                      ? 'bg-gray-800 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   placeholder="আপনার ইমেইল লিখুন"
@@ -199,13 +207,13 @@ export const AuthForm: React.FC = () => {
                 <Lock size={20} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  {...register('password', { 
+                  {...register('password', {
                     required: 'পাসওয়ার্ড আবশ্যক',
                     minLength: { value: 6, message: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' }
                   })}
                   className={`w-full pl-10 pr-12 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-600 text-white' 
+                    darkMode
+                      ? 'bg-gray-800 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   placeholder="আপনার পাসওয়ার্ড লিখুন"
@@ -232,13 +240,13 @@ export const AuthForm: React.FC = () => {
                   <Lock size={20} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    {...register('confirmPassword', { 
+                    {...register('confirmPassword', {
                       required: !isLogin ? 'পাসওয়ার্ড নিশ্চিত করুন' : false,
                       validate: value => isLogin || value === password || 'পাসওয়ার্ড মিলছে না'
                     })}
                     className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                      darkMode 
-                        ? 'bg-gray-800 border-gray-600 text-white' 
+                      darkMode
+                        ? 'bg-gray-800 border-gray-600 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
                     } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                     placeholder="পাসওয়ার্ড আবার লিখুন"
@@ -278,7 +286,7 @@ export const AuthForm: React.FC = () => {
               onClick={toggleMode}
               className={`text-sm ${darkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'}`}
             >
-              {isLogin 
+              {isLogin
                 ? 'নতুন অ্যাকাউন্ট তৈরি করতে চান? নিবন্ধন করুন'
                 : 'ইতিমধ্যে অ্যাকাউন্ট আছে? প্রবেশ করুন'
               }
