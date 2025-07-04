@@ -1,17 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  CreditCard, 
-  PieChart, 
-  Target, 
-  Users, 
-  Settings,
-  TrendingUp,
-  Receipt,
-  User
-} from 'lucide-react';
+import { Home, CreditCard, PieChart, Target, Users, Settings, TrendingUp, Receipt, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const navigationItems = [

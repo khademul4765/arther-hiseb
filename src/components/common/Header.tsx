@@ -29,10 +29,10 @@ export const Header: React.FC = () => {
               </div>
               <div>
                 <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  আমার হিসেব
+                  অর্থ হিসেব
                 </h1>
                 <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Khademul Bashar
+                  by Khademul Bashar
                 </p>
               </div>
             </div>

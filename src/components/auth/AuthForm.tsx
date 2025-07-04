@@ -118,10 +118,10 @@ export const AuthForm: React.FC = () => {
             </div>
           </div>
           <h2 className={`mt-6 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            অর্থ হিসেব
+            আমার হিসেব
           </h2>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            by Khademul Bashar
+            Khademul Bashar
           </p>
           <p className={`mt-4 text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             {isLogin ? 'আপনার অ্যাকাউন্টে প্রবেশ করুন' : 'নতুন অ্যাকাউন্ট তৈরি করুন'}
@@ -240,7 +240,7 @@ export const AuthForm: React.FC = () => {
                       darkMode 
                         ? 'bg-gray-800 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                    } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                     placeholder="পাসওয়ার্ড আবার লিখুন"
                   />
                 </div>
