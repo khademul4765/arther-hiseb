@@ -79,7 +79,20 @@ export const AuthForm: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      setError(getErrorMessage(error.code));
+      
+      // Special handling for email already in use during registration
+      if (error.code === 'auth/email-already-in-use' && !isLogin) {
+        setError('এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।');
+        // Switch to login mode and reset form
+        setTimeout(() => {
+          setIsLogin(true);
+          reset();
+          setError('');
+          setRegistrationWarning(false);
+        }, 2000);
+      } else {
+        setError(getErrorMessage(error.code));
+      }
     } finally {
       setLoading(false);
     }
