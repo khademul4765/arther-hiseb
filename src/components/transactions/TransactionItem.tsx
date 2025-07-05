@@ -30,14 +30,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-md transition-shadow`}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        whileHover={{ scale: 1.01, y: -2 }}
+        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="text-3xl">
+            <motion.div 
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="text-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 shadow-md"
+            >
               {getCategoryIcon(transaction.category)}
-            </div>
+            </motion.div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -94,18 +98,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             
             <div className="flex items-center space-x-2">
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowEditForm(true)}
-                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} shadow-md transition-all duration-200`}
               >
                 <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowDeleteConfirm(true)}
-                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} shadow-md transition-all duration-200`}
               >
                 <Trash2 size={16} className="text-red-500" />
               </motion.button>

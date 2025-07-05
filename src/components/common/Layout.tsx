@@ -20,10 +20,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <motion.main
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="flex-1 p-4 md:p-6 lg:p-8 ml-0 md:ml-64 pb-20 md:pb-8"
         >
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </motion.main>
       </div>
       <FloatingActionButton />

@@ -58,7 +58,7 @@ export const AccountManager: React.FC = () => {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <h1 className={`text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           অ্যাকাউন্টস
         </h1>
         <div className="flex space-x-2 md:space-x-3">
@@ -207,8 +207,8 @@ export const AccountManager: React.FC = () => {
               <button
                 onClick={() => setShowDeleteConfirm(null)}
                 className={`flex-1 px-4 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  darkMode
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >

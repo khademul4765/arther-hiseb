@@ -78,10 +78,10 @@ export const FloatingActionButton: React.FC = () => {
                   y: 20,
                   transition: { delay: (actions.length - index - 1) * 0.1 }
                 }}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={action.action}
-                className={`${action.color} text-white p-3 rounded-full shadow-lg flex items-center space-x-2 min-w-max`}
+                className={`${action.color} text-white p-3 rounded-full shadow-xl hover:shadow-2xl flex items-center space-x-2 min-w-max transition-all duration-300`}
               >
                 <action.icon size={20} />
                 <span className="text-sm font-medium pr-1">{action.label}</span>
@@ -93,12 +93,12 @@ export const FloatingActionButton: React.FC = () => {
 
       {/* Main FAB */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.1, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 w-14 h-14 md:w-16 md:h-16 ${
-          darkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'
-        } text-white rounded-full shadow-lg flex items-center justify-center transition-colors`}
+          darkMode ? 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' : 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+        } text-white rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-300`}
       >
         <motion.div
           animate={{ rotate: isOpen ? 45 : 0 }}

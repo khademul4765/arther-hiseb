@@ -21,11 +21,11 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ scale: 1.02 }}
-      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-4 md:p-6 shadow-sm`}
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      whileHover={{ scale: 1.02, y: -4 }}
+      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm`}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
@@ -36,9 +36,12 @@ export const StatsCard: React.FC<StatsCardProps> = ({
             {value}
           </p>
         </div>
-        <div className={`${color} rounded-lg p-2 md:p-3 text-white flex-shrink-0 ml-2`}>
+        <motion.div 
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          className={`${color} rounded-xl p-2 md:p-3 text-white flex-shrink-0 ml-2 shadow-lg`}
+        >
           {icon}
-        </div>
+        </motion.div>
       </div>
       {trend && (
         <div className="mt-2 md:mt-4 flex items-center">
