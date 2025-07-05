@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Settings, Building2 } from 'lucide-react';
+import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Settings, Building2, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navigationItems = [
@@ -12,6 +12,7 @@ const navigationItems = [
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
   { path: '/loans', name: 'ঋণ ও পাওনা', icon: Users },
   { path: '/reports', name: 'রিপোর্ট', icon: Receipt },
+  { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
   { path: '/account', name: 'আমার একাউন্ট', icon: User },
   { path: '/settings', name: 'সেটিংস', icon: Settings },
 ];
@@ -22,6 +23,7 @@ const bottomNavItems = [
   { path: '/accounts', name: 'একাউন্ট', icon: Wallet },
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
+  { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
   { path: '/account', name: 'প্রোফাইল', icon: User },
 ];
 
@@ -138,7 +140,7 @@ export const Navigation: React.FC = () => {
 
       {/* Mobile Bottom Navigation */}
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-40`}>
-        <div className="grid grid-cols-5 gap-1 p-2">
+        <div className="grid grid-cols-6 gap-1 p-2">
           {bottomNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
