@@ -68,7 +68,7 @@ function App() {
             <Route path="/loans" element={<LoanManager />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/account" element={<AccountPage />} />
+            <Route path="/profile" element={<AccountPage />} />
           </Routes>
         </Layout>
       </div>

@@ -13,7 +13,7 @@ const navigationItems = [
   { path: '/loans', name: 'ঋণ ও পাওনা', icon: Users },
   { path: '/reports', name: 'রিপোর্ট', icon: Receipt },
   { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
-  { path: '/account', name: 'প্রোফাইল', icon: User },
+  { path: '/profile', name: 'প্রোফাইল', icon: User },
   { path: '/settings', name: 'সেটিংস', icon: Settings },
 ];
 

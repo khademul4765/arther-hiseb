@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
+import { db } from '../config/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 interface StoreState {
   user: User | null;
@@ -41,7 +43,6 @@ interface StoreState {
   // Goal Actions
   addGoal: (goal: Omit<Goal, 'id' | 'userId' | 'createdAt'>) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
-  deleteGoal: (id: string) => void;
   addToGoal: (goalId: string, amount: number, transactionId: string) => void;
   
   // Loan Actions
@@ -104,18 +105,76 @@ export const useStore = create<StoreState>()(
         set({ user: null });
       },
 
-      loadUserData: (userId) => {
-        // Filter data to show only current user's data
-        const allState = get();
-        set({
-          accounts: allState.accounts.filter(a => a.userId === userId),
-          transactions: allState.transactions.filter(t => t.userId === userId),
-          categories: allState.categories.filter(c => c.userId === userId),
-          budgets: allState.budgets.filter(b => b.userId === userId),
-          goals: allState.goals.filter(g => g.userId === userId),
-          loans: allState.loans.filter(l => l.userId === userId),
-          notifications: allState.notifications.filter(n => n.userId === userId),
-        });
+      loadUserData: async (userId) => {
+        try {
+          // Fetch accounts from Firestore
+          const accountsQuery = query(collection(db, 'accounts'), where('userId', '==', userId));
+          const accountsSnapshot = await getDocs(accountsQuery);
+          const accounts: Account[] = accountsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Account));
+
+          // Fetch transactions from Firestore
+          const transactionsQuery = query(collection(db, 'transactions'), where('userId', '==', userId));
+          const transactionsSnapshot = await getDocs(transactionsQuery);
+          const transactions: Transaction[] = transactionsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Transaction));
+
+          // Fetch categories from Firestore
+          const categoriesQuery = query(collection(db, 'categories'), where('userId', '==', userId));
+          const categoriesSnapshot = await getDocs(categoriesQuery);
+          const categories: Category[] = categoriesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Category));
+
+          // Fetch budgets from Firestore
+          const budgetsQuery = query(collection(db, 'budgets'), where('userId', '==', userId));
+          const budgetsSnapshot = await getDocs(budgetsQuery);
+          const budgets: Budget[] = budgetsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Budget));
+
+          // Fetch goals from Firestore
+          const goalsQuery = query(collection(db, 'goals'), where('userId', '==', userId));
+          const goalsSnapshot = await getDocs(goalsQuery);
+          const goals: Goal[] = goalsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Goal));
+
+          // Fetch loans from Firestore
+          const loansQuery = query(collection(db, 'loans'), where('userId', '==', userId));
+          const loansSnapshot = await getDocs(loansQuery);
+          const loans: Loan[] = loansSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Loan));
+
+          // Fetch notifications from Firestore
+          const notificationsQuery = query(collection(db, 'notifications'), where('userId', '==', userId));
+          const notificationsSnapshot = await getDocs(notificationsQuery);
+          const notifications: Notification[] = notificationsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Notification));
+
+          set({
+            accounts: accounts,
+            transactions: transactions,
+            categories: categories,
+            budgets: budgets,
+            goals: goals,
+            loans: loans,
+            notifications: notifications,
+          });
+        } catch (error) {
+          console.error('Error fetching user data from Firestore:', error);
+        }
       },
 
       // Account Actions
