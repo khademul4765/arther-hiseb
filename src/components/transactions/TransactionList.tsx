@@ -34,7 +34,7 @@ export const TransactionList: React.FC = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
+          <h1 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
             লেনদেনের তালিকা
           </h1>
           <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mt-2`}></div>
@@ -46,7 +46,7 @@ export const TransactionList: React.FC = () => {
           className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl flex items-center space-x-2 hover:from-green-600 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <Plus size={20} />
-          <span>নতুন লেনদেন</span>
+          <span className="text-base">নতুন লেনদেন</span>
         </motion.button>
       </motion.div>
 
@@ -115,7 +115,7 @@ export const TransactionList: React.FC = () => {
       >
         {sortedTransactions.length === 0 ? (
           <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-8 text-center shadow-lg`}>
-            <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-xl ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               কোন লেনদেন পাওয়া যায়নি
             </p>
           </div>

@@ -84,7 +84,7 @@ export const FloatingActionButton: React.FC = () => {
                 className={`${action.color} text-white p-3 rounded-full shadow-xl hover:shadow-2xl flex items-center space-x-2 min-w-max transition-all duration-300`}
               >
                 <action.icon size={20} />
-                <span className="text-sm font-medium pr-1">{action.label}</span>
+                <span className="text-base font-medium pr-1">{action.label}</span>
               </motion.button>
             ))}
           </div>

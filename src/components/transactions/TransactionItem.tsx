@@ -44,7 +44,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             </motion.div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
-                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   {transaction.category}
                 </h3>
                 <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -55,16 +55,16 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
                   )}
                 </div>
               </div>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {format(new Date(transaction.date), 'dd MMM yyyy')} • {transaction.time}
               </p>
               {transaction.note && (
-                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>
+                <p className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>
                   {transaction.note}
                 </p>
               )}
               {transaction.person && (
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+                <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
                   ব্যক্তি: {transaction.person}
                 </p>
               )}
@@ -73,7 +73,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
                   {transaction.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className={`px-2 py-1 text-xs rounded-full ${
+                      className={`px-3 py-1 text-sm rounded-full ${
                         darkMode 
                           ? 'bg-gray-700 text-gray-300' 
                           : 'bg-gray-100 text-gray-600'
@@ -89,7 +89,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className={`text-xl font-bold ${
+              <p className={`text-2xl font-bold ${
                 transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
               }`}>
                 {transaction.type === 'income' ? '+' : '-'}৳{transaction.amount.toLocaleString()}
@@ -139,16 +139,16 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             animate={{ scale: 1, opacity: 1 }}
             className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
           >
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+            <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
               লেনদেন মুছবেন?
             </h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+            <p className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
               এই লেনদেনটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className={`flex-1 px-4 py-2 rounded-lg border ${
+                className={`flex-1 px-4 py-2 rounded-lg border text-base ${
                   darkMode 
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -158,7 +158,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-base"
               >
                 মুছে ফেলুন
               </button>

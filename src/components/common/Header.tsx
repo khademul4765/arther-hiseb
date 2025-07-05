@@ -74,10 +74,10 @@ export const Header: React.FC = () => {
                 <span className="text-white font-bold text-xl">৳</span>
               </motion.div>
               <div>
-                <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
+                <h1 className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
                   অর্থের হিসেব
                 </h1>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
                   by Khademul Bashar
                 </p>
               </div>
@@ -86,7 +86,7 @@ export const Header: React.FC = () => {
 
           <div className="flex items-center space-x-2 md:space-x-4">
             {user && (
-              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} hidden md:block`}>
+              <div className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} hidden md:block`}>
                 স্বাগতম, {user.name}
               </div>
             )}

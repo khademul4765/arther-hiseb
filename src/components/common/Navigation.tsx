@@ -76,7 +76,7 @@ export const Navigation: React.FC = () => {
                     }`}
                   >
                     <item.icon size={20} />
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-medium text-base">{item.name}</span>
                   </NavLink>
                 </motion.li>
               );
@@ -140,7 +140,7 @@ export const Navigation: React.FC = () => {
                           }`}
                         >
                           <item.icon size={20} />
-                          <span className="font-medium">{item.name}</span>
+                          <span className="font-medium text-base">{item.name}</span>
                         </NavLink>
                       </motion.li>
                     );
@@ -170,7 +170,7 @@ export const Navigation: React.FC = () => {
                 }`}
               >
                 <item.icon size={18} />
-                <span className="text-xs md:text-sm font-medium">{item.name}</span>
+                <span className="text-sm md:text-base font-medium">{item.name}</span>
               </NavLink>
             );
           })}

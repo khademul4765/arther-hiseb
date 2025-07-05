@@ -23,12 +23,12 @@ export const RecentTransactions: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.2 }}
       className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6`}
     >
-      <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+      <h2 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
         সাম্প্রতিক লেনদেন
       </h2>
       <div className="space-y-4">
         {recentTransactions.length === 0 ? (
-          <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-center py-8 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             কোন লেনদেন নেই
           </p>
         ) : (
@@ -45,10 +45,10 @@ export const RecentTransactions: React.FC = () => {
                   {getCategoryIcon(transaction.category)}
                 </div>
                 <div>
-                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <p className={`font-medium text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     {transaction.category}
                   </p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {format(new Date(transaction.date), 'dd MMM yyyy')}
                   </p>
                 </div>
@@ -61,7 +61,7 @@ export const RecentTransactions: React.FC = () => {
                     <ArrowDownRight size={16} />
                   )}
                 </div>
-                <span className={`font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`font-semibold text-lg ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                   {transaction.type === 'income' ? '+' : '-'}৳{transaction.amount.toLocaleString()}
                 </span>
               </div>
