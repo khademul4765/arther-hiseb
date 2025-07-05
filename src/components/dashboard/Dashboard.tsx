@@ -11,6 +11,9 @@ import { TrendingUp, TrendingDown, Target, CreditCard } from 'lucide-react';
 export const Dashboard: React.FC = () => {
   const { transactions, budgets, goals, accounts, darkMode } = useStore();
 
+  // Calculation helpers with leading zero formatting
+  const formatAmount = (amount: number) => amount < 10 ? `0${amount.toLocaleString()}` : amount.toLocaleString();
+
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -44,21 +47,21 @@ export const Dashboard: React.FC = () => {
       >
         <StatsCard
           title="মোট ব্যালেন্স"
-          value={`${balance.toLocaleString()} ৳`}
+          value={`${formatAmount(balance)} ৳`}
           icon={<CreditCard size={20} className="md:w-6 md:h-6" />}
           color="bg-blue-600"
           trend={balance > 0 ? '+' : ''}
         />
         <StatsCard
           title="মোট আয়"
-          value={`${totalIncome.toLocaleString()} ৳`}
+          value={`${formatAmount(totalIncome)} ৳`}
           icon={<TrendingUp size={20} className="md:w-6 md:h-6" />}
           color="bg-green-600"
           trend="+"
         />
         <StatsCard
           title="মোট খরচ"
-          value={`${totalExpense.toLocaleString()} ৳`}
+          value={`${formatAmount(totalExpense)} ৳`}
           icon={<TrendingDown size={20} className="md:w-6 md:h-6" />}
           color="bg-red-600"
           trend="-"

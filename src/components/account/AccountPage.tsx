@@ -8,7 +8,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../config/firebase';
 
 export const AccountPage: React.FC = () => {
-  const { user, setUser, transactions, budgets, goals, loans, darkMode } = useStore();
+  const { user, setUser, accounts, transactions, budgets, goals, loans, darkMode } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [loading, setLoading] = useState(false);
@@ -42,6 +42,9 @@ export const AccountPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Calculation helpers with leading zero formatting
+  const formatAmount = (amount: number) => amount < 10 ? `0${amount.toLocaleString()}` : amount.toLocaleString();
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -237,7 +240,7 @@ export const AccountPage: React.FC = () => {
                 মোট আয়
               </h4>
               <p className="text-2xl font-bold text-green-600">
-                {totalIncome.toLocaleString()} ৳
+                {formatAmount(totalIncome)} ৳
               </p>
             </div>
 
@@ -246,7 +249,7 @@ export const AccountPage: React.FC = () => {
                 মোট খরচ
               </h4>
               <p className="text-2xl font-bold text-red-600">
-                {totalExpense.toLocaleString()} ৳
+                {formatAmount(totalExpense)} ৳
               </p>
             </div>
           </div>
@@ -257,7 +260,7 @@ export const AccountPage: React.FC = () => {
               নেট সম্পদ
             </h4>
             <p className={`text-3xl font-bold ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              {totalBalance.toLocaleString()} ৳
+              {formatAmount(totalBalance)} ৳
             </p>
           </div>
         </motion.div>

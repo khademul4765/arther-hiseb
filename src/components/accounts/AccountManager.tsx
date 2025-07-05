@@ -55,6 +55,9 @@ export const AccountManager: React.FC = () => {
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
+  // Calculation helpers with leading zero formatting
+  const formatAmount = (amount: number) => amount < 10 ? `0${amount.toLocaleString()}` : amount.toLocaleString();
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
@@ -90,7 +93,7 @@ export const AccountManager: React.FC = () => {
         className={`${darkMode ? 'bg-gradient-to-r from-green-800 to-green-600' : 'bg-gradient-to-r from-green-600 to-green-500'} rounded-xl p-4 md:p-6 text-white`}
       >
         <h2 className="text-base md:text-lg font-medium opacity-90 mb-2">মোট ব্যালেন্স</h2>
-        <p className="text-2xl md:text-4xl font-bold">{totalBalance.toLocaleString()} ৳</p>
+        <p className="text-2xl md:text-4xl font-bold">{formatAmount(totalBalance)} ৳</p>
         <p className="text-xs md:text-sm opacity-75 mt-2">{accounts.length}টি অ্যাকাউন্ট</p>
       </motion.div>
 
