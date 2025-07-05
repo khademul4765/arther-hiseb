@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { Bell, Moon, Sun, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Bell, Moon, Sun, LogOut, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
@@ -22,10 +22,10 @@ export const Header: React.FC = () => {
   const toggleMobileMenu = () => {
     const newState = !showMobileMenu;
     setShowMobileMenu(newState);
-    
+
     // Dispatch custom event to notify Navigation component
-    window.dispatchEvent(new CustomEvent('mobileMenuToggle', { 
-      detail: { isOpen: newState } 
+    window.dispatchEvent(new CustomEvent('mobileMenuToggle', {
+      detail: { isOpen: newState }
     }));
   };
 
@@ -88,14 +88,6 @@ export const Header: React.FC = () => {
                   {unreadNotifications}
                 </span>
               )}
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`hidden md:block p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} hover:bg-opacity-80`}
-            >
-              <Settings size={20} />
             </motion.button>
 
             <motion.button

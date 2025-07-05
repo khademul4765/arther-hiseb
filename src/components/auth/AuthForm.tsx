@@ -79,7 +79,7 @@ export const AuthForm: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      
+
       // Special handling for email already in use during registration
       if (error.code === 'auth/email-already-in-use' && !isLogin) {
         setError('এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।');
@@ -139,7 +139,7 @@ export const AuthForm: React.FC = () => {
             </div>
           </div>
           <h2 className={`mt-6 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            অর্থ হিসেব
+            অর্থের হিসেব
           </h2>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             by Khademul Bashar
