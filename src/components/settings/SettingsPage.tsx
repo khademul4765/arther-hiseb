@@ -8,13 +8,13 @@ export const SettingsPage: React.FC = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const exportData = () => {
-    const data = localStorage.getItem('amar-hiseb-storage');
+    const data = localStorage.getItem('orther-hiseb-storage');
     if (data) {
       const dataBlob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `amar-hiseb-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `orther-hiseb-backup-${new Date().toISOString().split('T')[0]}.json`;
       link.click();
     }
   };
@@ -26,7 +26,7 @@ export const SettingsPage: React.FC = () => {
       reader.onload = (e) => {
         try {
           const data = e.target?.result as string;
-          localStorage.setItem('amar-hiseb-storage', data);
+          localStorage.setItem('orther-hiseb-storage', data);
           window.location.reload();
         } catch (error) {
           alert('ফাইল আপলোড করতে সমস্যা হয়েছে');

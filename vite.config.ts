@@ -14,8 +14,8 @@ export default defineConfig({
       },
       includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png'],
       manifest: {
-        name: 'আমার হিসেব',
-        short_name: 'AmarHisab',
+        name: 'অর্থের হিসেব',
+        short_name: 'OrtherHisab',
         description: 'ব্যক্তিগত আর্থিক ব্যবস্থাপনা অ্যাপ',
         theme_color: '#228B22',
         background_color: '#ffffff',

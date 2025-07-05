@@ -786,7 +786,7 @@ export const useStore = create<StoreState>()(
       },
     }),
     {
-      name: 'amar-hiseb-storage',
+      name: 'orther-hiseb-storage',
     }
   )
 );

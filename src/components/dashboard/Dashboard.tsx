@@ -43,7 +43,7 @@ export const Dashboard: React.FC = () => {
         className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6"
       >
         <StatsCard
-          title="মোট ব্যালেন্স"
+          title="মোট বর্তমান ব্যালেন্স"
           value={`${balance.toLocaleString()} ৳`}
           icon={<CreditCard size={20} className="md:w-6 md:h-6" />}
           color="bg-blue-600"
@@ -79,7 +79,8 @@ export const Dashboard: React.FC = () => {
         className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
       >
         <ExpenseChart />
-        <BudgetOverview />
+        <RecentTransactions />
+        
       </motion.div>
 
       <motion.div 
@@ -88,7 +89,7 @@ export const Dashboard: React.FC = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
       >
-        <RecentTransactions />
+        <BudgetOverview />
         <GoalsProgress />
       </motion.div>
     </div>
