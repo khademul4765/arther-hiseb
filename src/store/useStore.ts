@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
 import { db } from '../config/firebase';
-import { collection, getDocs, query, where, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 interface StoreState {
   user: User | null;
@@ -67,6 +67,29 @@ interface StoreState {
   loadUserData: (userId: string) => void;
 }
 
+// Helper function to convert Firestore Timestamps to Date objects
+const convertTimestampsToDate = (obj: any): any => {
+  if (!obj) return obj;
+  
+  if (obj instanceof Timestamp) {
+    return obj.toDate();
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(convertTimestampsToDate);
+  }
+  
+  if (typeof obj === 'object' && obj !== null) {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      converted[key] = convertTimestampsToDate(value);
+    }
+    return converted;
+  }
+  
+  return obj;
+};
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -119,70 +142,91 @@ export const useStore = create<StoreState>()(
           // Setup listeners for accounts
           const accountsQuery = query(collection(db, 'accounts'), where('userId', '==', userId));
           onSnapshot(accountsQuery, (snapshot) => {
-            const accounts: Account[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Account));
+            const accounts: Account[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Account;
+            });
             set({ accounts: accounts });
           });
 
           // Setup listeners for transactions
           const transactionsQuery = query(collection(db, 'transactions'), where('userId', '==', userId));
           onSnapshot(transactionsQuery, (snapshot) => {
-            const transactions: Transaction[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Transaction));
+            const transactions: Transaction[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Transaction;
+            });
             set({ transactions: transactions });
           });
 
           // Setup listeners for categories
           const categoriesQuery = query(collection(db, 'categories'), where('userId', '==', userId));
           onSnapshot(categoriesQuery, (snapshot) => {
-            const categories: Category[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Category));
+            const categories: Category[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Category;
+            });
             set({ categories: categories });
           });
 
           // Setup listeners for budgets
           const budgetsQuery = query(collection(db, 'budgets'), where('userId', '==', userId));
           onSnapshot(budgetsQuery, (snapshot) => {
-            const budgets: Budget[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Budget));
+            const budgets: Budget[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Budget;
+            });
             set({ budgets: budgets });
           });
 
           // Setup listeners for goals
           const goalsQuery = query(collection(db, 'goals'), where('userId', '==', userId));
           onSnapshot(goalsQuery, (snapshot) => {
-            const goals: Goal[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Goal));
+            const goals: Goal[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Goal;
+            });
             set({ goals: goals });
           });
 
           // Setup listeners for loans
           const loansQuery = query(collection(db, 'loans'), where('userId', '==', userId));
           onSnapshot(loansQuery, (snapshot) => {
-            const loans: Loan[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Loan));
+            const loans: Loan[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Loan;
+            });
             set({ loans: loans });
           });
 
           // Setup listeners for notifications
           const notificationsQuery = query(collection(db, 'notifications'), where('userId', '==', userId));
           onSnapshot(notificationsQuery, (snapshot) => {
-            const notifications: Notification[] = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            } as Notification));
+            const notifications: Notification[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Notification;
+            });
             set({ notifications: notifications });
           });
         } catch (error) {
