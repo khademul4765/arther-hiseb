@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
 import { db } from '../config/firebase';
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 interface StoreState {
   user: User | null;
@@ -14,9 +14,10 @@ interface StoreState {
   loans: Loan[];
   notifications: Notification[];
   darkMode: boolean;
+  isInitialized: boolean;
   
   // Auth Actions
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null) => Promise<void>;
   logout: () => void;
   
   // Account Actions
@@ -60,8 +61,8 @@ interface StoreState {
   toggleDarkMode: () => void;
   
   // Utility Actions
-  initializeDefaultCategories: (userId: string) => void;
-  initializeDefaultAccounts: (userId: string) => void;
+  initializeDefaultCategories: (userId: string) => Promise<void>;
+  initializeDefaultAccounts: (userId: string) => Promise<void>;
   clearUserData: () => void;
   loadUserData: (userId: string) => void;
 }
@@ -78,25 +79,33 @@ export const useStore = create<StoreState>()(
       loans: [],
       notifications: [],
       darkMode: false,
+      isInitialized: false,
 
       // Auth Actions
-      setUser: (user) => {
+      setUser: async (user) => {
         set({ user });
         if (user) {
           // Load user's data when they log in
           get().loadUserData(user.id);
           
-          // Initialize default categories if none exist for this user
-          const userCategories = get().categories.filter(c => c.userId === user.id);
-          if (userCategories.length === 0) {
-            get().initializeDefaultCategories(user.id);
-          }
+          // Wait a bit for the data to load, then check if we need to initialize defaults
+          setTimeout(async () => {
+            if (get().isInitialized) return; // Prevent duplicate initialization
+            
+            const userCategories = get().categories.filter(c => c.userId === user.id);
+            if (userCategories.length === 0) {
+              await get().initializeDefaultCategories(user.id);
+            }
 
-          // Initialize default accounts if none exist for this user
-          const userAccounts = get().accounts.filter(a => a.userId === user.id);
-          if (userAccounts.length === 0) {
-            get().initializeDefaultAccounts(user.id);
-          }
+            const userAccounts = get().accounts.filter(a => a.userId === user.id);
+            if (userAccounts.length === 0) {
+              await get().initializeDefaultAccounts(user.id);
+            }
+            
+            set({ isInitialized: true });
+          }, 1000); // Wait 1 second for Firestore listeners to load data
+        } else {
+          set({ isInitialized: false });
         }
       },
 
@@ -182,32 +191,23 @@ export const useStore = create<StoreState>()(
       },
 
       // Account Actions
-      addAccount: (account) => {
+      addAccount: async (account) => {
         const user = get().user;
         if (!user) return;
-
-        const newAccount: Account = {
+        await addDoc(collection(db, 'accounts'), {
           ...account,
-          id: Date.now().toString(),
           userId: user.id,
-          createdAt: new Date(),
-        };
-
-        set((state) => ({
-          accounts: [...state.accounts, newAccount],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      updateAccount: (id, updates) => {
-        set((state) => ({
-          accounts: state.accounts.map((a) =>
-            a.id === id ? { ...a, ...updates } : a
-          ),
-        }));
+      updateAccount: async (id, updates) => {
+        await updateDoc(doc(db, 'accounts', id), {
+          ...updates,
+        });
       },
 
-      deleteAccount: (id) => {
-        // Check if account has transactions
+      deleteAccount: async (id) => {
         const hasTransactions = get().transactions.some(t => t.accountId === id || t.toAccountId === id);
         if (hasTransactions) {
           get().addNotification({
@@ -219,21 +219,15 @@ export const useStore = create<StoreState>()(
           });
           return;
         }
-
-        set((state) => ({
-          accounts: state.accounts.filter((a) => a.id !== id),
-        }));
+        await deleteDoc(doc(db, 'accounts', id));
       },
 
-      transferMoney: (fromAccountId, toAccountId, amount, note = '') => {
+      transferMoney: async (fromAccountId, toAccountId, amount, note = '') => {
         const user = get().user;
         if (!user) return;
-
         const fromAccount = get().accounts.find(a => a.id === fromAccountId);
         const toAccount = get().accounts.find(a => a.id === toAccountId);
-
         if (!fromAccount || !toAccount) return;
-
         if (fromAccount.balance < amount) {
           get().addNotification({
             title: 'অপর্যাপ্ত ব্যালেন্স',
@@ -244,19 +238,13 @@ export const useStore = create<StoreState>()(
           });
           return;
         }
-
-        // Update account balances
-        get().updateAccount(fromAccountId, {
+        await updateDoc(doc(db, 'accounts', fromAccountId), {
           balance: fromAccount.balance - amount
         });
-
-        get().updateAccount(toAccountId, {
+        await updateDoc(doc(db, 'accounts', toAccountId), {
           balance: toAccount.balance + amount
         });
-
-        // Create transfer transaction
-        const transferTransaction: Transaction = {
-          id: Date.now().toString(),
+        await addDoc(collection(db, 'transactions'), {
           userId: user.id,
           amount,
           type: 'transfer',
@@ -267,14 +255,9 @@ export const useStore = create<StoreState>()(
           time: new Date().toTimeString().slice(0, 5),
           note: note || `${fromAccount.name} থেকে ${toAccount.name} এ ট্রান্সফার`,
           tags: ['ট্রান্সফার'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        set((state) => ({
-          transactions: [...state.transactions, transferTransaction],
-        }));
-
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
         get().addNotification({
           title: 'ট্রান্সফার সফল',
           message: `৳${amount.toLocaleString()} ${fromAccount.name} থেকে ${toAccount.name} এ ট্রান্সফার হয়েছে।`,
@@ -285,289 +268,107 @@ export const useStore = create<StoreState>()(
       },
 
       // Transaction Actions
-      addTransaction: (transaction) => {
+      addTransaction: async (transaction) => {
         const user = get().user;
         if (!user) return;
-
-        const newTransaction: Transaction = {
+        await addDoc(collection(db, 'transactions'), {
           ...transaction,
-          id: Date.now().toString(),
           userId: user.id,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        set((state) => ({
-          transactions: [...state.transactions, newTransaction],
-        }));
-
-        // Update account balance
-        const account = get().accounts.find(a => a.id === transaction.accountId);
-        if (account) {
-          const balanceChange = transaction.type === 'income' ? transaction.amount : -transaction.amount;
-          get().updateAccount(account.id, {
-            balance: account.balance + balanceChange
-          });
-        }
-
-        // Update budget spent amount
-        const budgets = get().budgets.filter(b => b.userId === user.id);
-        const relatedBudget = budgets.find(b => b.category === transaction.category && transaction.type === 'expense');
-        if (relatedBudget) {
-          get().updateBudget(relatedBudget.id, {
-            spent: relatedBudget.spent + transaction.amount
-          });
-        }
-
-        // Check for budget alerts
-        if (relatedBudget) {
-          const spentPercentage = ((relatedBudget.spent + transaction.amount) / relatedBudget.amount) * 100;
-          if (spentPercentage >= 100) {
-            get().addNotification({
-              title: 'বাজেট ছাড়িয়ে গেছে!',
-              message: `${relatedBudget.name} বাজেট ১০০% ছাড়িয়ে গেছে!`,
-              type: 'budget',
-              priority: 'high',
-              isRead: false
-            });
-          } else if (spentPercentage >= 90) {
-            get().addNotification({
-              title: 'বাজেট সতর্কতা',
-              message: `${relatedBudget.name} বাজেট ৯০% শেষ!`,
-              type: 'budget',
-              priority: 'high',
-              isRead: false
-            });
-          } else if (spentPercentage >= 75) {
-            get().addNotification({
-              title: 'বাজেট সতর্কতা',
-              message: `${relatedBudget.name} বাজেট ৭৫% শেষ!`,
-              type: 'budget',
-              priority: 'medium',
-              isRead: false
-            });
-          }
-        }
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       },
 
-      updateTransaction: (id, updates) => {
-        const user = get().user;
-        if (!user) return;
-
-        const oldTransaction = get().transactions.find(t => t.id === id);
-        if (!oldTransaction) return;
-
-        // Revert old transaction's effect on account balance
-        const oldAccount = get().accounts.find(a => a.id === oldTransaction.accountId);
-        if (oldAccount) {
-          const oldBalanceChange = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
-          get().updateAccount(oldAccount.id, {
-            balance: oldAccount.balance + oldBalanceChange
-          });
-        }
-
-        // Revert old transaction's effect on budget
-        if (oldTransaction.type === 'expense') {
-          const budgets = get().budgets.filter(b => b.userId === user.id);
-          const oldRelatedBudget = budgets.find(b => b.category === oldTransaction.category);
-          if (oldRelatedBudget) {
-            get().updateBudget(oldRelatedBudget.id, {
-              spent: Math.max(0, oldRelatedBudget.spent - oldTransaction.amount)
-            });
-          }
-        }
-
-        // Update transaction
-        set((state) => ({
-          transactions: state.transactions.map((t) =>
-            t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
-          ),
-        }));
-
-        // Apply new transaction's effect on account balance
-        const updatedTransaction = { ...oldTransaction, ...updates };
-        const newAccount = get().accounts.find(a => a.id === updatedTransaction.accountId);
-        if (newAccount) {
-          const newBalanceChange = updatedTransaction.type === 'income' ? updatedTransaction.amount : -updatedTransaction.amount;
-          get().updateAccount(newAccount.id, {
-            balance: newAccount.balance + newBalanceChange
-          });
-        }
-
-        // Apply new transaction's effect on budget
-        if (updatedTransaction.type === 'expense') {
-          const budgets = get().budgets.filter(b => b.userId === user.id);
-          const newRelatedBudget = budgets.find(b => b.category === updatedTransaction.category);
-          if (newRelatedBudget) {
-            get().updateBudget(newRelatedBudget.id, {
-              spent: newRelatedBudget.spent + updatedTransaction.amount
-            });
-          }
-        }
+      updateTransaction: async (id, updates) => {
+        await updateDoc(doc(db, 'transactions', id), {
+          ...updates,
+          updatedAt: serverTimestamp(),
+        });
       },
 
-      deleteTransaction: (id) => {
-        const user = get().user;
-        if (!user) return;
-
-        const transaction = get().transactions.find(t => t.id === id);
-        if (!transaction) return;
-
-        // Revert transaction's effect on account balance
-        const account = get().accounts.find(a => a.id === transaction.accountId);
-        if (account) {
-          const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
-          get().updateAccount(account.id, {
-            balance: account.balance + balanceChange
-          });
-
-          // If it's a transfer, also update the destination account
-          if (transaction.type === 'transfer' && transaction.toAccountId) {
-            const toAccount = get().accounts.find(a => a.id === transaction.toAccountId);
-            if (toAccount) {
-              get().updateAccount(toAccount.id, {
-                balance: toAccount.balance - transaction.amount
-              });
-            }
-          }
-        }
-
-        // Update budget spent amount
-        if (transaction.type === 'expense') {
-          const budgets = get().budgets.filter(b => b.userId === user.id);
-          const relatedBudget = budgets.find(b => b.category === transaction.category);
-          if (relatedBudget) {
-            get().updateBudget(relatedBudget.id, {
-              spent: Math.max(0, relatedBudget.spent - transaction.amount)
-            });
-          }
-        }
-
-        // Remove from goal if it's a goal transaction
-        const goals = get().goals.filter(g => g.userId === user.id);
-        const relatedGoal = goals.find(g => g.transactionIds.includes(transaction.id));
-        if (relatedGoal) {
-          get().updateGoal(relatedGoal.id, {
-            currentAmount: Math.max(0, relatedGoal.currentAmount - transaction.amount),
-            transactionIds: relatedGoal.transactionIds.filter(tid => tid !== transaction.id)
-          });
-        }
-
-        set((state) => ({
-          transactions: state.transactions.filter((t) => t.id !== id),
-        }));
+      deleteTransaction: async (id) => {
+        await deleteDoc(doc(db, 'transactions', id));
       },
 
       // Category Actions
-      addCategory: (category) => {
+      addCategory: async (category) => {
         const user = get().user;
         if (!user) return;
-
-        const newCategory: Category = {
+        await addDoc(collection(db, 'categories'), {
           ...category,
-          id: Date.now().toString(),
           userId: user.id,
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          categories: [...state.categories, newCategory],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      updateCategory: (id, updates) => {
-        set((state) => ({
-          categories: state.categories.map((c) =>
-            c.id === id ? { ...c, ...updates } : c
-          ),
-        }));
+      updateCategory: async (id, updates) => {
+        await updateDoc(doc(db, 'categories', id), {
+          ...updates,
+        });
       },
 
-      deleteCategory: (id) => {
+      deleteCategory: async (id) => {
         const category = get().categories.find(c => c.id === id);
-        if (category?.isDefault) return; // Prevent deletion of default categories
-
-        set((state) => ({
-          categories: state.categories.filter((c) => c.id !== id),
-        }));
+        if (category?.isDefault) return;
+        await deleteDoc(doc(db, 'categories', id));
       },
 
       // Budget Actions
-      addBudget: (budget) => {
+      addBudget: async (budget) => {
         const user = get().user;
         if (!user) return;
-
-        const newBudget: Budget = {
+        await addDoc(collection(db, 'budgets'), {
           ...budget,
-          id: Date.now().toString(),
           userId: user.id,
           spent: 0,
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          budgets: [...state.budgets, newBudget],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      updateBudget: (id, updates) => {
-        set((state) => ({
-          budgets: state.budgets.map((b) =>
-            b.id === id ? { ...b, ...updates } : b
-          ),
-        }));
+      updateBudget: async (id, updates) => {
+        await updateDoc(doc(db, 'budgets', id), {
+          ...updates,
+        });
       },
 
-      deleteBudget: (id) => {
-        set((state) => ({
-          budgets: state.budgets.filter((b) => b.id !== id),
-        }));
+      deleteBudget: async (id) => {
+        await deleteDoc(doc(db, 'budgets', id));
       },
 
       // Goal Actions
-      addGoal: (goal) => {
+      addGoal: async (goal) => {
         const user = get().user;
         if (!user) return;
-
-        const newGoal: Goal = {
+        await addDoc(collection(db, 'goals'), {
           ...goal,
-          id: Date.now().toString(),
           userId: user.id,
           currentAmount: 0,
           transactionIds: [],
           isCompleted: false,
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          goals: [...state.goals, newGoal],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      updateGoal: (id, updates) => {
-        set((state) => ({
-          goals: state.goals.map((g) =>
-            g.id === id ? { ...g, ...updates } : g
-          ),
-        }));
+      updateGoal: async (id, updates) => {
+        await updateDoc(doc(db, 'goals', id), {
+          ...updates,
+        });
       },
 
-      deleteGoal: (id) => {
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id),
-        }));
+      deleteGoal: async (id) => {
+        await deleteDoc(doc(db, 'goals', id));
       },
 
-      addToGoal: (goalId, amount, transactionId) => {
+      addToGoal: async (goalId, amount, transactionId) => {
         const goal = get().goals.find(g => g.id === goalId);
         if (!goal) return;
-
         const newCurrentAmount = goal.currentAmount + amount;
         const isCompleted = newCurrentAmount >= goal.targetAmount;
-
-        get().updateGoal(goalId, {
+        await updateDoc(doc(db, 'goals', goalId), {
           currentAmount: newCurrentAmount,
           transactionIds: [...goal.transactionIds, transactionId],
           isCompleted
         });
-
         if (isCompleted) {
           get().addNotification({
             title: 'লক্ষ্য অর্জিত!',
@@ -577,7 +378,6 @@ export const useStore = create<StoreState>()(
             isRead: false
           });
         } else if (newCurrentAmount >= goal.targetAmount * 0.8) {
-          // Notify when 80% complete
           get().addNotification({
             title: 'লক্ষ্যের কাছাকাছি!',
             message: `"${goal.name}" লক্ষ্য ৮০% সম্পূর্ণ হয়েছে।`,
@@ -589,49 +389,36 @@ export const useStore = create<StoreState>()(
       },
 
       // Loan Actions
-      addLoan: (loan) => {
+      addLoan: async (loan) => {
         const user = get().user;
         if (!user) return;
-
-        const newLoan: Loan = {
+        await addDoc(collection(db, 'loans'), {
           ...loan,
-          id: Date.now().toString(),
           userId: user.id,
           remainingAmount: loan.amount,
           installments: [],
           isCompleted: false,
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          loans: [...state.loans, newLoan],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      updateLoan: (id, updates) => {
-        set((state) => ({
-          loans: state.loans.map((l) =>
-            l.id === id ? { ...l, ...updates } : l
-          ),
-        }));
+      updateLoan: async (id, updates) => {
+        await updateDoc(doc(db, 'loans', id), {
+          ...updates,
+        });
       },
 
-      deleteLoan: (id) => {
-        set((state) => ({
-          loans: state.loans.filter((l) => l.id !== id),
-        }));
+      deleteLoan: async (id) => {
+        await deleteDoc(doc(db, 'loans', id));
       },
 
-      payInstallment: (loanId, installmentId, amount) => {
+      payInstallment: async (loanId, installmentId, amount) => {
         const loan = get().loans.find(l => l.id === loanId);
         if (!loan) return;
-
-        // Create a new installment if it doesn't exist
         let updatedInstallments = loan.installments;
         const existingInstallment = loan.installments.find(inst => inst.id === installmentId);
-        
         if (!existingInstallment) {
-          // Create new installment
-          const newInstallment: Installment = {
+          const newInstallment = {
             id: installmentId,
             amount,
             dueDate: new Date(),
@@ -641,23 +428,19 @@ export const useStore = create<StoreState>()(
           };
           updatedInstallments = [...loan.installments, newInstallment];
         } else {
-          // Update existing installment
           updatedInstallments = loan.installments.map(inst =>
             inst.id === installmentId
               ? { ...inst, isPaid: true, paidDate: new Date() }
               : inst
           );
         }
-
         const newRemainingAmount = Math.max(0, loan.remainingAmount - amount);
         const isCompleted = newRemainingAmount === 0;
-
-        get().updateLoan(loanId, {
+        await updateDoc(doc(db, 'loans', loanId), {
           installments: updatedInstallments,
           remainingAmount: newRemainingAmount,
           isCompleted
         });
-
         if (isCompleted) {
           get().addNotification({
             title: 'ঋণ পরিশোধ সম্পূর্ণ',
@@ -670,36 +453,29 @@ export const useStore = create<StoreState>()(
       },
 
       // Notification Actions
-      addNotification: (notification) => {
+      addNotification: async (notification) => {
         const user = get().user;
         if (!user) return;
-
-        const newNotification: Notification = {
+        await addDoc(collection(db, 'notifications'), {
           ...notification,
-          id: Date.now().toString(),
           userId: user.id,
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          notifications: [...state.notifications, newNotification],
-        }));
+          createdAt: serverTimestamp(),
+        });
       },
 
-      markNotificationAsRead: (id) => {
-        set((state) => ({
-          notifications: state.notifications.map((n) =>
-            n.id === id ? { ...n, isRead: true } : n
-          ),
-        }));
+      markNotificationAsRead: async (id) => {
+        await updateDoc(doc(db, 'notifications', id), {
+          isRead: true
+        });
       },
 
-      clearAllNotifications: () => {
+      clearAllNotifications: async () => {
         const user = get().user;
         if (!user) return;
-
-        set((state) => ({
-          notifications: state.notifications.filter(n => n.userId !== user.id)
-        }));
+        const notifications = get().notifications.filter(n => n.userId === user.id);
+        for (const n of notifications) {
+          await deleteDoc(doc(db, 'notifications', n.id));
+        }
       },
 
       // UI Actions
@@ -708,48 +484,50 @@ export const useStore = create<StoreState>()(
       },
 
       // Utility Actions
-      initializeDefaultCategories: (userId) => {
-        const defaultCategories: Category[] = [
-          { id: `${userId}-1`, userId, name: 'খাবার', color: '#FF6B6B', icon: '🍽️', type: 'expense', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-2`, userId, name: 'পরিবহন', color: '#4ECDC4', icon: '🚗', type: 'expense', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-3`, userId, name: 'বিনোদন', color: '#45B7D1', icon: '🎬', type: 'expense', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-4`, userId, name: 'স্বাস্থ্য', color: '#96CEB4', icon: '🏥', type: 'expense', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-5`, userId, name: 'শিক্ষা', color: '#FFEAA7', icon: '📚', type: 'expense', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-6`, userId, name: 'বেতন', color: '#DDA0DD', icon: '💰', type: 'income', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-7`, userId, name: 'ব্যবসা', color: '#98D8E8', icon: '🏢', type: 'income', isDefault: true, createdAt: new Date() },
-          { id: `${userId}-8`, userId, name: 'বিনিয়োগ', color: '#F7DC6F', icon: '📈', type: 'income', isDefault: true, createdAt: new Date() },
+      initializeDefaultCategories: async (userId) => {
+        const defaultCategories = [
+          { name: 'খাবার', color: '#FF6B6B', icon: '🍽️', type: 'expense', isDefault: true },
+          { name: 'পরিবহন', color: '#4ECDC4', icon: '🚗', type: 'expense', isDefault: true },
+          { name: 'বিনোদন', color: '#45B7D1', icon: '🎬', type: 'expense', isDefault: true },
+          { name: 'স্বাস্থ্য', color: '#96CEB4', icon: '🏥', type: 'expense', isDefault: true },
+          { name: 'শিক্ষা', color: '#FFEAA7', icon: '📚', type: 'expense', isDefault: true },
+          { name: 'বেতন', color: '#DDA0DD', icon: '💰', type: 'income', isDefault: true },
+          { name: 'ব্যবসা', color: '#98D8E8', icon: '🏢', type: 'income', isDefault: true },
+          { name: 'বিনিয়োগ', color: '#F7DC6F', icon: '📈', type: 'income', isDefault: true },
         ];
 
-        set((state) => ({
-          categories: [...state.categories, ...defaultCategories]
-        }));
+        for (const category of defaultCategories) {
+          await addDoc(collection(db, 'categories'), {
+            ...category,
+            userId,
+            createdAt: serverTimestamp(),
+          });
+        }
       },
 
-      initializeDefaultAccounts: (userId) => {
-        const defaultAccounts: Account[] = [
+      initializeDefaultAccounts: async (userId) => {
+        const defaultAccounts = [
           {
-            id: `${userId}-acc-1`,
-            userId,
             name: 'নগদ',
             type: 'cash',
             description: 'হাতে থাকা নগদ টাকা',
             balance: 0,
-            createdAt: new Date()
           },
           {
-            id: `${userId}-acc-2`,
-            userId,
             name: 'ব্যাংক অ্যাকাউন্ট',
             type: 'bank',
             description: 'প্রধান ব্যাংক অ্যাকাউন্ট',
             balance: 0,
-            createdAt: new Date()
           }
         ];
 
-        set((state) => ({
-          accounts: [...state.accounts, ...defaultAccounts]
-        }));
+        for (const account of defaultAccounts) {
+          await addDoc(collection(db, 'accounts'), {
+            ...account,
+            userId,
+            createdAt: serverTimestamp(),
+          });
+        }
       },
 
       clearUserData: () => {

@@ -32,41 +32,51 @@ export const RecentTransactions: React.FC = () => {
             কোন লেনদেন নেই
           </p>
         ) : (
-          recentTransactions.map((transaction) => (
-            <motion.div
-              key={transaction.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">
-                  {getCategoryIcon(transaction.category)}
+          recentTransactions.map((transaction) => {
+            const parsedDate = new Date(transaction.date); // Parse the date here
+
+            // Check if the date is valid.  If not, use a default or handle appropriately.
+            if (isNaN(parsedDate.getTime())) {
+              console.error("Invalid date:", transaction.date);
+              return null; // Or render a placeholder
+            }
+
+            return (
+              <motion.div
+                key={transaction.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">
+                    {getCategoryIcon(transaction.category)}
+                  </div>
+                  <div>
+                    <p className={`font-medium text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {transaction.category}
+                    </p>
+                    <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {format(parsedDate, 'dd MMM yyyy')} {/* Use parsedDate */}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className={`font-medium text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {transaction.category}
-                  </p>
-                  <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {format(new Date(transaction.date), 'dd MMM yyyy')}
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {transaction.type === 'income' ? (
+                      <ArrowUpRight size={16} />
+                    ) : (
+                      <ArrowDownRight size={16} />
+                    )}
+                  </div>
+                  <span className={`font-semibold text-lg ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toLocaleString()} ৳
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                  {transaction.type === 'income' ? (
-                    <ArrowUpRight size={16} />
-                  ) : (
-                    <ArrowDownRight size={16} />
-                  )}
-                </div>
-                <span className={`font-semibold text-lg ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                  {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toLocaleString()} ৳
-                </span>
-              </div>
-            </motion.div>
-          ))
+              </motion.div>
+            );
+          })
         )}
       </div>
     </motion.div>
