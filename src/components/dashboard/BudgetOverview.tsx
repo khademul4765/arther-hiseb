@@ -15,9 +15,6 @@ export const BudgetOverview: React.FC = () => {
     return { status: 'safe', icon: CheckCircle, color: 'text-green-600' };
   };
 
-  // Calculation helpers with leading zero formatting
-  const formatAmount = (amount: number) => amount < 10 ? `0${amount.toLocaleString()}` : amount.toLocaleString();
-
   const activeBudgets = budgets.filter(b => b.isActive).slice(0, 4);
 
   return (
@@ -70,7 +67,7 @@ export const BudgetOverview: React.FC = () => {
                   />
                 </div>
                 <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {formatAmount(spentAmount)} ৳ / {formatAmount(budget.amount)} ৳
+                  {spentAmount.toLocaleString()} ৳ / {budget.amount.toLocaleString()} ৳
                 </p>
               </motion.div>
             );

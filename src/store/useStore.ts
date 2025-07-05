@@ -45,6 +45,7 @@ interface StoreState {
   addGoal: (goal: Omit<Goal, 'id' | 'userId' | 'createdAt'>) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   addToGoal: (goalId: string, amount: number, transactionId: string) => void;
+  deleteGoal: (id: string) => void;
   
   // Loan Actions
   addLoan: (loan: Omit<Loan, 'id' | 'userId' | 'createdAt'>) => void;
@@ -65,6 +66,7 @@ interface StoreState {
   initializeDefaultAccounts: (userId: string) => Promise<void>;
   clearUserData: () => void;
   loadUserData: (userId: string) => void;
+  calculateBudgetSpent: () => void;
 }
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -163,6 +165,8 @@ export const useStore = create<StoreState>()(
               } as Transaction;
             });
             set({ transactions: transactions });
+            // Recalculate budget spent amounts when transactions change
+            get().calculateBudgetSpent();
           });
 
           // Setup listeners for categories
@@ -189,6 +193,8 @@ export const useStore = create<StoreState>()(
               } as Budget;
             });
             set({ budgets: budgets });
+            // Recalculate budget spent amounts when budgets change
+            get().calculateBudgetSpent();
           });
 
           // Setup listeners for goals
@@ -315,6 +321,19 @@ export const useStore = create<StoreState>()(
       addTransaction: async (transaction) => {
         const user = get().user;
         if (!user) return;
+        
+        // Update account balance
+        const account = get().accounts.find(a => a.id === transaction.accountId);
+        if (account) {
+          const newBalance = transaction.type === 'income' 
+            ? account.balance + transaction.amount 
+            : account.balance - transaction.amount;
+          
+          await updateDoc(doc(db, 'accounts', transaction.accountId), {
+            balance: newBalance
+          });
+        }
+
         await addDoc(collection(db, 'transactions'), {
           ...transaction,
           userId: user.id,
@@ -324,6 +343,40 @@ export const useStore = create<StoreState>()(
       },
 
       updateTransaction: async (id, updates) => {
+        const oldTransaction = get().transactions.find(t => t.id === id);
+        if (!oldTransaction) return;
+
+        // Revert old transaction effect on account balance
+        const account = get().accounts.find(a => a.id === oldTransaction.accountId);
+        if (account) {
+          const revertedBalance = oldTransaction.type === 'income' 
+            ? account.balance - oldTransaction.amount 
+            : account.balance + oldTransaction.amount;
+
+          // Apply new transaction effect
+          const newAmount = updates.amount || oldTransaction.amount;
+          const newType = updates.type || oldTransaction.type;
+          const newAccountId = updates.accountId || oldTransaction.accountId;
+          
+          const targetAccount = get().accounts.find(a => a.id === newAccountId);
+          if (targetAccount) {
+            const finalBalance = newType === 'income' 
+              ? (newAccountId === oldTransaction.accountId ? revertedBalance : targetAccount.balance) + newAmount
+              : (newAccountId === oldTransaction.accountId ? revertedBalance : targetAccount.balance) - newAmount;
+
+            await updateDoc(doc(db, 'accounts', newAccountId), {
+              balance: finalBalance
+            });
+
+            // If account changed, update the old account too
+            if (newAccountId !== oldTransaction.accountId) {
+              await updateDoc(doc(db, 'accounts', oldTransaction.accountId), {
+                balance: revertedBalance
+              });
+            }
+          }
+        }
+
         await updateDoc(doc(db, 'transactions', id), {
           ...updates,
           updatedAt: serverTimestamp(),
@@ -331,6 +384,21 @@ export const useStore = create<StoreState>()(
       },
 
       deleteTransaction: async (id) => {
+        const transaction = get().transactions.find(t => t.id === id);
+        if (!transaction) return;
+
+        // Revert transaction effect on account balance
+        const account = get().accounts.find(a => a.id === transaction.accountId);
+        if (account) {
+          const newBalance = transaction.type === 'income' 
+            ? account.balance - transaction.amount 
+            : account.balance + transaction.amount;
+          
+          await updateDoc(doc(db, 'accounts', transaction.accountId), {
+            balance: newBalance
+          });
+        }
+
         await deleteDoc(doc(db, 'transactions', id));
       },
 
@@ -377,6 +445,25 @@ export const useStore = create<StoreState>()(
 
       deleteBudget: async (id) => {
         await deleteDoc(doc(db, 'budgets', id));
+      },
+
+      calculateBudgetSpent: () => {
+        const { budgets, transactions } = get();
+        
+        budgets.forEach(async (budget) => {
+          const budgetTransactions = transactions.filter(t => 
+            t.type === 'expense' && 
+            t.category === budget.category &&
+            new Date(t.date) >= new Date(budget.startDate) &&
+            new Date(t.date) <= new Date(budget.endDate)
+          );
+          
+          const spent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
+          
+          if (budget.spent !== spent) {
+            updateDoc(doc(db, 'budgets', budget.id), { spent });
+          }
+        });
       },
 
       // Goal Actions

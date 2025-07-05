@@ -142,9 +142,6 @@ export const ReportsPage: React.FC = () => {
     link.click();
   };
 
-  // Calculation helpers with leading zero formatting
-  const formatAmount = (amount: number) => amount < 10 ? `0${amount.toLocaleString()}` : amount.toLocaleString();
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -227,7 +224,7 @@ export const ReportsPage: React.FC = () => {
                 মোট আয়
               </p>
               <p className={`text-2xl font-bold text-green-600 mt-1`}>
-                ৳{formatAmount(totalIncome)}
+                ৳{totalIncome.toLocaleString()}
               </p>
             </div>
             <div className="bg-green-100 rounded-lg p-3">
@@ -248,7 +245,7 @@ export const ReportsPage: React.FC = () => {
                 মোট খরচ
               </p>
               <p className={`text-2xl font-bold text-red-600 mt-1`}>
-                ৳{formatAmount(totalExpense)}
+                ৳{totalExpense.toLocaleString()}
               </p>
             </div>
             <div className="bg-red-100 rounded-lg p-3">
@@ -269,7 +266,7 @@ export const ReportsPage: React.FC = () => {
                 নেট ব্যালেন্স
               </p>
               <p className={`text-2xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'} mt-1`}>
-                ৳{formatAmount(balance)}
+                ৳{balance.toLocaleString()}
               </p>
             </div>
             <div className={`${balance >= 0 ? 'bg-blue-100' : 'bg-red-100'} rounded-lg p-3`}>
@@ -361,7 +358,7 @@ export const ReportsPage: React.FC = () => {
                   <td className={`py-2 text-right font-medium ${
                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}৳{formatAmount(transaction.amount)}
+                    {transaction.type === 'income' ? '+' : '-'}৳{transaction.amount.toLocaleString()}
                   </td>
                 </tr>
               ))}
