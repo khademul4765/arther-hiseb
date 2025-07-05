@@ -54,7 +54,7 @@ export const ExpenseChart: React.FC = () => {
           label: (context: any) => {
             const label = context.label || '';
             const value = context.parsed || 0;
-            return `${label}: ৳${value.toLocaleString()}`;
+            return `${label}: ${value.toLocaleString()} ৳`;
           },
         },
       },

@@ -27,10 +27,7 @@ export const BudgetManager: React.FC = () => {
   };
 
   const getBudgetStatus = (budget: any) => {
-    const spentAmount = transactions
-      .filter(t => t.type === 'expense' && t.category === budget.category)
-      .reduce((sum, t) => sum + t.amount, 0);
-
+    const spentAmount = budget.spent || 0;
     const percentage = (spentAmount / budget.amount) * 100;
 
     if (percentage >= 90) return { status: 'danger', icon: AlertTriangle, color: 'text-red-600', bgColor: 'bg-red-100' };
@@ -57,10 +54,7 @@ export const BudgetManager: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {budgets.map((budget) => {
-          const spentAmount = transactions
-            .filter(t => t.type === 'expense' && t.category === budget.category)
-            .reduce((sum, t) => sum + t.amount, 0);
-          
+          const spentAmount = budget.spent || 0;
           const percentage = Math.min((spentAmount / budget.amount) * 100, 100);
           const { status, icon: Icon, color, bgColor } = getBudgetStatus(budget);
 

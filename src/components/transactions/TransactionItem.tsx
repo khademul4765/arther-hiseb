@@ -92,7 +92,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <p className={`text-2xl font-bold ${
                 transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
               }`}>
-                {transaction.type === 'income' ? '+' : '-'}৳{transaction.amount.toLocaleString()}
+                {transaction.type === 'income' ? '+' : ''}{transaction.amount.toLocaleString()} ৳
               </p>
             </div>
             

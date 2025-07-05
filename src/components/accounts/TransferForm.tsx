@@ -28,6 +28,13 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
   const toAccount = accounts.find(a => a.id === toAccountId);
 
   const onFormSubmit = (data: FormData) => {
+    const fromAccount = accounts.find(a => a.id === data.fromAccountId);
+    
+    if (fromAccount && data.amount > fromAccount.balance) {
+      alert('অপর্যাপ্ত ব্যালেন্স।');
+      return;
+    }
+    
     transferMoney(data.fromAccountId, data.toAccountId, data.amount, data.note);
     onSubmit();
   };
@@ -90,7 +97,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
               <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {accounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} - ৳{account.balance.toLocaleString()}
+                  {account.name} - {account.balance.toLocaleString()} ৳
                 </option>
               ))}
             </select>
@@ -102,7 +109,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
                 <div className="flex items-center space-x-2">
                   {getAccountIcon(fromAccount.type)}
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    বর্তমান ব্যালেন্স: ৳{fromAccount.balance.toLocaleString()}
+                    বর্তমান ব্যালেন্স: {fromAccount.balance.toLocaleString()} ৳
                   </span>
                 </div>
               </div>
@@ -125,7 +132,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
               <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {availableToAccounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} - ৳{account.balance.toLocaleString()}
+                  {account.name} - {account.balance.toLocaleString()} ৳
                 </option>
               ))}
             </select>
@@ -137,7 +144,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
                 <div className="flex items-center space-x-2">
                   {getAccountIcon(toAccount.type)}
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    বর্তমান ব্যালেন্স: ৳{toAccount.balance.toLocaleString()}
+                    বর্তমান ব্যালেন্স: {toAccount.balance.toLocaleString()} ৳
                   </span>
                 </div>
               </div>
@@ -212,16 +219,16 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
                 </div>
                 <div className="flex justify-between">
                   <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>পরিমাণ:</span>
-                  <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>৳{amount.toLocaleString()}</span>
+                  <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{amount.toLocaleString()} ৳</span>
                 </div>
                 <hr className={darkMode ? 'border-blue-700' : 'border-blue-300'} />
                 <div className="flex justify-between">
                   <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>ট্রান্সফারের পর {fromAccount.name}:</span>
-                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>৳{(fromAccount.balance - amount).toLocaleString()}</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>{(fromAccount.balance - amount).toLocaleString()} ৳</span>
                 </div>
                 <div className="flex justify-between">
                   <span className={darkMode ? 'text-blue-200' : 'text-blue-700'}>ট্রান্সফারের পর {toAccount.name}:</span>
-                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>৳{(toAccount.balance + amount).toLocaleString()}</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>{(toAccount.balance + amount).toLocaleString()} ৳</span>
                 </div>
               </div>
             </div>

@@ -7,10 +7,7 @@ export const BudgetOverview: React.FC = () => {
   const { budgets, transactions, darkMode } = useStore();
 
   const getBudgetStatus = (budget: any) => {
-    const spentAmount = transactions
-      .filter(t => t.type === 'expense' && t.category === budget.category)
-      .reduce((sum, t) => sum + t.amount, 0);
-
+    const spentAmount = budget.spent || 0;
     const percentage = (spentAmount / budget.amount) * 100;
 
     if (percentage >= 90) return { status: 'danger', icon: AlertTriangle, color: 'text-red-600' };
@@ -37,10 +34,7 @@ export const BudgetOverview: React.FC = () => {
           </p>
         ) : (
           activeBudgets.map((budget) => {
-            const spentAmount = transactions
-              .filter(t => t.type === 'expense' && t.category === budget.category)
-              .reduce((sum, t) => sum + t.amount, 0);
-            
+            const spentAmount = budget.spent || 0;
             const percentage = Math.min((spentAmount / budget.amount) * 100, 100);
             const { status, icon: Icon, color } = getBudgetStatus(budget);
 
@@ -73,7 +67,7 @@ export const BudgetOverview: React.FC = () => {
                   />
                 </div>
                 <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  ৳{spentAmount.toLocaleString()} / ৳{budget.amount.toLocaleString()}
+                  {spentAmount.toLocaleString()} ৳ / {budget.amount.toLocaleString()} ৳
                 </p>
               </motion.div>
             );

@@ -30,10 +30,18 @@ export const LoanManager: React.FC = () => {
 
   const handlePayment = (loanId: string) => {
     const amount = parseFloat(paymentAmount);
-    if (amount > 0) {
+    const loan = loans.find(l => l.id === loanId);
+    
+    if (amount > 0 && loan) {
+      if (amount > loan.remainingAmount) {
+        alert('পেমেন্টের পরিমাণ বাকি টাকার চেয়ে বেশি হতে পারে না।');
+        return;
+      }
       payInstallment(loanId, Date.now().toString(), amount);
       setShowPayment(null);
       setPaymentAmount('');
+    } else {
+      alert('সঠিক পরিমাণ লিখুন।');
     }
   };
 
@@ -123,7 +131,7 @@ export const LoanManager: React.FC = () => {
                       মোট পরিমাণ:
                     </span>
                     <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ৳{loan.amount.toLocaleString()}
+                      {loan.amount.toLocaleString()} ৳
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -131,7 +139,7 @@ export const LoanManager: React.FC = () => {
                       বাকি:
                     </span>
                     <span className={`text-sm font-medium ${loan.isCompleted ? 'text-green-600' : 'text-red-600'}`}>
-                      ৳{loan.remainingAmount.toLocaleString()}
+                      {loan.remainingAmount.toLocaleString()} ৳
                     </span>
                   </div>
                   {loan.dueDate && (
@@ -225,7 +233,7 @@ export const LoanManager: React.FC = () => {
                       মোট পরিমাণ:
                     </span>
                     <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ৳{loan.amount.toLocaleString()}
+                      {loan.amount.toLocaleString()} ৳
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -233,7 +241,7 @@ export const LoanManager: React.FC = () => {
                       বাকি:
                     </span>
                     <span className={`text-sm font-medium ${loan.isCompleted ? 'text-green-600' : 'text-orange-600'}`}>
-                      ৳{loan.remainingAmount.toLocaleString()}
+                      {loan.remainingAmount.toLocaleString()} ৳
                     </span>
                   </div>
                   {loan.dueDate && (

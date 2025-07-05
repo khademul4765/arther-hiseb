@@ -78,7 +78,7 @@ export const Header: React.FC = () => {
                   অর্থের হিসেব
                 </h1>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-                  by Khademul Bashar
+                  by MK Bashar
                 </p>
               </div>
             </div>

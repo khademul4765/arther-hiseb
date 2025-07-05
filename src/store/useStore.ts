@@ -259,12 +259,28 @@ export const useStore = create<StoreState>()(
         // Check for budget alerts
         if (relatedBudget) {
           const spentPercentage = ((relatedBudget.spent + transaction.amount) / relatedBudget.amount) * 100;
-          if (spentPercentage >= 90) {
+          if (spentPercentage >= 100) {
+            get().addNotification({
+              title: 'বাজেট ছাড়িয়ে গেছে!',
+              message: `${relatedBudget.name} বাজেট ১০০% ছাড়িয়ে গেছে!`,
+              type: 'budget',
+              priority: 'high',
+              isRead: false
+            });
+          } else if (spentPercentage >= 90) {
             get().addNotification({
               title: 'বাজেট সতর্কতা',
               message: `${relatedBudget.name} বাজেট ৯০% শেষ!`,
               type: 'budget',
               priority: 'high',
+              isRead: false
+            });
+          } else if (spentPercentage >= 75) {
+            get().addNotification({
+              title: 'বাজেট সতর্কতা',
+              message: `${relatedBudget.name} বাজেট ৭৫% শেষ!`,
+              type: 'budget',
+              priority: 'medium',
               isRead: false
             });
           }
@@ -287,6 +303,17 @@ export const useStore = create<StoreState>()(
           });
         }
 
+        // Revert old transaction's effect on budget
+        if (oldTransaction.type === 'expense') {
+          const budgets = get().budgets.filter(b => b.userId === user.id);
+          const oldRelatedBudget = budgets.find(b => b.category === oldTransaction.category);
+          if (oldRelatedBudget) {
+            get().updateBudget(oldRelatedBudget.id, {
+              spent: Math.max(0, oldRelatedBudget.spent - oldTransaction.amount)
+            });
+          }
+        }
+
         // Update transaction
         set((state) => ({
           transactions: state.transactions.map((t) =>
@@ -302,6 +329,17 @@ export const useStore = create<StoreState>()(
           get().updateAccount(newAccount.id, {
             balance: newAccount.balance + newBalanceChange
           });
+        }
+
+        // Apply new transaction's effect on budget
+        if (updatedTransaction.type === 'expense') {
+          const budgets = get().budgets.filter(b => b.userId === user.id);
+          const newRelatedBudget = budgets.find(b => b.category === updatedTransaction.category);
+          if (newRelatedBudget) {
+            get().updateBudget(newRelatedBudget.id, {
+              spent: newRelatedBudget.spent + updatedTransaction.amount
+            });
+          }
         }
       },
 
@@ -340,6 +378,16 @@ export const useStore = create<StoreState>()(
               spent: Math.max(0, relatedBudget.spent - transaction.amount)
             });
           }
+        }
+
+        // Remove from goal if it's a goal transaction
+        const goals = get().goals.filter(g => g.userId === user.id);
+        const relatedGoal = goals.find(g => g.transactionIds.includes(transaction.id));
+        if (relatedGoal) {
+          get().updateGoal(relatedGoal.id, {
+            currentAmount: Math.max(0, relatedGoal.currentAmount - transaction.amount),
+            transactionIds: relatedGoal.transactionIds.filter(tid => tid !== transaction.id)
+          });
         }
 
         set((state) => ({
@@ -465,6 +513,15 @@ export const useStore = create<StoreState>()(
             priority: 'high',
             isRead: false
           });
+        } else if (newCurrentAmount >= goal.targetAmount * 0.8) {
+          // Notify when 80% complete
+          get().addNotification({
+            title: 'লক্ষ্যের কাছাকাছি!',
+            message: `"${goal.name}" লক্ষ্য ৮০% সম্পূর্ণ হয়েছে।`,
+            type: 'goal',
+            priority: 'medium',
+            isRead: false
+          });
         }
       },
 
@@ -505,11 +562,29 @@ export const useStore = create<StoreState>()(
         const loan = get().loans.find(l => l.id === loanId);
         if (!loan) return;
 
-        const updatedInstallments = loan.installments.map(inst =>
-          inst.id === installmentId
-            ? { ...inst, isPaid: true, paidDate: new Date() }
-            : inst
-        );
+        // Create a new installment if it doesn't exist
+        let updatedInstallments = loan.installments;
+        const existingInstallment = loan.installments.find(inst => inst.id === installmentId);
+        
+        if (!existingInstallment) {
+          // Create new installment
+          const newInstallment: Installment = {
+            id: installmentId,
+            amount,
+            dueDate: new Date(),
+            paidDate: new Date(),
+            isPaid: true,
+            note: 'ম্যানুয়াল পেমেন্ট'
+          };
+          updatedInstallments = [...loan.installments, newInstallment];
+        } else {
+          // Update existing installment
+          updatedInstallments = loan.installments.map(inst =>
+            inst.id === installmentId
+              ? { ...inst, isPaid: true, paidDate: new Date() }
+              : inst
+          );
+        }
 
         const newRemainingAmount = Math.max(0, loan.remainingAmount - amount);
         const isCompleted = newRemainingAmount === 0;

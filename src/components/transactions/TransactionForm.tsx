@@ -192,7 +192,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {accounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} - ৳{account.balance.toLocaleString()}
+                  {account.name} - {account.balance.toLocaleString()} ৳
                 </option>
               ))}
             </select>
@@ -204,7 +204,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <div className="flex items-center space-x-2">
                   {getAccountIcon(selectedAccount.type)}
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    বর্তমান ব্যালেন্স: ৳{selectedAccount.balance.toLocaleString()}
+                    বর্তমান ব্যালেন্স: {selectedAccount.balance.toLocaleString()} ৳
                   </span>
                 </div>
               </div>

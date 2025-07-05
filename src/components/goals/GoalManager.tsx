@@ -30,10 +30,19 @@ export const GoalManager: React.FC = () => {
 
   const handleAddMoney = (goalId: string) => {
     const amount = parseFloat(addAmount);
-    if (amount > 0) {
+    const goal = goals.find(g => g.id === goalId);
+    
+    if (amount > 0 && goal) {
+      const newTotal = goal.currentAmount + amount;
+      if (newTotal > goal.targetAmount) {
+        alert('মোট জমা লক্ষ্যমাত্রার চেয়ে বেশি হতে পারে না।');
+        return;
+      }
       addToGoal(goalId, amount, Date.now().toString());
       setShowAddMoney(null);
       setAddAmount('');
+    } else {
+      alert('সঠিক পরিমাণ লিখুন।');
     }
   };
 
@@ -117,7 +126,7 @@ export const GoalManager: React.FC = () => {
                         stroke={isCompleted ? '#10B981' : '#8B5CF6'}
                         strokeWidth="8"
                         fill="none"
-                        strokeDasharray={`${percentage * 2.51} 251`}
+                        strokeDasharray={`${percentage * 2.513} 251.3`}
                         className="transition-all duration-500"
                       />
                     </svg>
@@ -132,10 +141,10 @@ export const GoalManager: React.FC = () => {
                 {/* Amount Info */}
                 <div className="text-center">
                   <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ৳{goal.currentAmount.toLocaleString()}
+                    {goal.currentAmount.toLocaleString()} ৳
                   </p>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    লক্ষ্য: ৳{goal.targetAmount.toLocaleString()}
+                    লক্ষ্য: {goal.targetAmount.toLocaleString()} ৳
                   </p>
                 </div>
 

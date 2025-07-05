@@ -40,11 +40,20 @@ export const AuthForm: React.FC = () => {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
 
+        // Fetch user profile from Firestore
+        let userProfile = null;
+        try {
+          const userDoc = await import('firebase/firestore').then(({ doc, getDoc }) => getDoc(doc(db, 'users', user.uid)));
+          if (userDoc.exists()) {
+            userProfile = userDoc.data();
+          }
+        } catch (e) { /* ignore */ }
+
         setUser({
           id: user.uid,
           email: user.email!,
-          name: user.displayName || 'ব্যবহারকারী',
-          createdAt: new Date()
+          name: userProfile?.name || user.displayName || 'ব্যবহারকারী',
+          createdAt: userProfile?.createdAt ? new Date(userProfile.createdAt.seconds ? userProfile.createdAt.seconds * 1000 : userProfile.createdAt) : new Date()
         });
       } else if (mode === 'register') {
         // Registration
@@ -560,7 +569,7 @@ export const AuthForm: React.FC = () => {
             অর্থের হিসেব
           </h2>
           <p className={`mt-2 text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-            by Khademul Bashar
+            by MK Bashar
           </p>
           <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mx-auto mt-4`}></div>
           <p className={`mt-6 text-xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-medium`}>

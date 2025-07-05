@@ -15,7 +15,6 @@ import { GoalManager } from './components/goals/GoalManager';
 import { LoanManager } from './components/loans/LoanManager';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
-import { AccountPage } from './components/account/AccountPage';
 
 function App() {
   const { user, setUser, darkMode } = useStore();
@@ -68,7 +67,7 @@ function App() {
             <Route path="/loans" element={<LoanManager />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/account" element={<AccountPage />} />
+            <Route path="/account" element={<SettingsPage />} />
           </Routes>
         </Layout>
       </div>

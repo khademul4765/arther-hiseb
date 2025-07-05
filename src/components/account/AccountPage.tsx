@@ -47,6 +47,7 @@ export const AccountPage: React.FC = () => {
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const completedGoals = goals.filter(g => g.isCompleted).length;
   const activeBudgets = budgets.filter(b => b.isActive).length;
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
   const accountAge = user ? Math.floor((new Date().getTime() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
@@ -236,7 +237,7 @@ export const AccountPage: React.FC = () => {
                 মোট আয়
               </h4>
               <p className="text-2xl font-bold text-green-600">
-                ৳{totalIncome.toLocaleString()}
+                {totalIncome.toLocaleString()} ৳
               </p>
             </div>
 
@@ -245,7 +246,7 @@ export const AccountPage: React.FC = () => {
                 মোট খরচ
               </h4>
               <p className="text-2xl font-bold text-red-600">
-                ৳{totalExpense.toLocaleString()}
+                {totalExpense.toLocaleString()} ৳
               </p>
             </div>
           </div>
@@ -255,8 +256,8 @@ export const AccountPage: React.FC = () => {
             <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
               নেট সম্পদ
             </h4>
-            <p className={`text-3xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              ৳{(totalIncome - totalExpense).toLocaleString()}
+            <p className={`text-3xl font-bold ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              {totalBalance.toLocaleString()} ৳
             </p>
           </div>
         </motion.div>

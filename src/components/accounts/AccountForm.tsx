@@ -219,7 +219,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                   {watch('name') || 'অ্যাকাউন্টের নাম'}
                 </span>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  ৳{(watch('balance') || 0).toLocaleString()}
+                  {(watch('balance') || 0).toLocaleString()} ৳
                 </p>
               </div>
             </div>

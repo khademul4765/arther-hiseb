@@ -26,6 +26,7 @@ export const GoalsProgress: React.FC = () => {
         ) : (
           activeGoals.map((goal) => {
             const percentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+            const daysLeft = Math.ceil((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
             return (
               <motion.div
@@ -53,7 +54,10 @@ export const GoalsProgress: React.FC = () => {
                   />
                 </div>
                 <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  ৳{goal.currentAmount.toLocaleString()} / ৳{goal.targetAmount.toLocaleString()}
+                  {goal.currentAmount.toLocaleString()} ৳ / {goal.targetAmount.toLocaleString()} ৳
+                </p>
+                <p className={`text-xs ${daysLeft > 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {daysLeft > 0 ? `${daysLeft} দিন বাকি` : 'সময় শেষ'}
                 </p>
               </motion.div>
             );
