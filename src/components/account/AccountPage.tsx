@@ -64,7 +64,7 @@ export const AccountPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          আমার অ্যাকাউন্ট
+          প্রোফাইল
         </h1>
       </div>
 

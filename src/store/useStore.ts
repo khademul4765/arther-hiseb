@@ -148,8 +148,8 @@ export const useStore = create<StoreState>()(
         const hasTransactions = get().transactions.some(t => t.accountId === id || t.toAccountId === id);
         if (hasTransactions) {
           get().addNotification({
-            title: 'একাউন্ট মুছতে পারবেন না',
-            message: 'এই একাউন্টে লেনদেন রয়েছে। প্রথমে সব লেনদেন মুছুন।',
+            title: 'অ্যাকাউন্ট মুছতে পারবেন না',
+            message: 'এই অ্যাকাউন্টে লেনদেন রয়েছে। প্রথমে সব লেনদেন মুছুন।',
             type: 'insight',
             priority: 'medium',
             isRead: false
@@ -174,7 +174,7 @@ export const useStore = create<StoreState>()(
         if (fromAccount.balance < amount) {
           get().addNotification({
             title: 'অপর্যাপ্ত ব্যালেন্স',
-            message: 'একাউন্টে পর্যাপ্ত টাকা নেই।',
+            message: 'অ্যাকাউন্টে পর্যাপ্ত টাকা নেই।',
             type: 'insight',
             priority: 'medium',
             isRead: false
@@ -601,9 +601,9 @@ export const useStore = create<StoreState>()(
           {
             id: `${userId}-acc-2`,
             userId,
-            name: 'ব্যাংক একাউন্ট',
+            name: 'ব্যাংক অ্যাকাউন্ট',
             type: 'bank',
-            description: 'প্রধান ব্যাংক একাউন্ট',
+            description: 'প্রধান ব্যাংক অ্যাকাউন্ট',
             balance: 0,
             createdAt: new Date()
           }

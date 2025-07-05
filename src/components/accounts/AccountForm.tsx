@@ -70,7 +70,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {account ? 'একাউন্ট সম্পাদনা' : 'নতুন একাউন্ট তৈরি করুন'}
+            {account ? 'অ্যাকাউন্ট সম্পাদনা' : 'নতুন অ্যাকাউন্ট তৈরি করুন'}
           </h2>
           <button
             onClick={onClose}
@@ -84,17 +84,17 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
           {/* Name */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              একাউন্টের নাম *
+              অ্যাকাউন্টের নাম *
             </label>
             <input
               type="text"
-              {...register('name', { required: 'একাউন্টের নাম আবশ্যক' })}
+              {...register('name', { required: 'অ্যাকাউন্টের নাম আবশ্যক' })}
               className={`w-full px-3 py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
               } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-              placeholder="যেমন: নগদ, ব্যাংক একাউন্ট"
+              placeholder="যেমন: নগদ, ব্যাংক অ্যাকাউন্ট"
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -104,7 +104,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
           {/* Type */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-              একাউন্টের ধরন *
+              অ্যাকাউন্টের ধরন *
             </label>
             <div className="grid grid-cols-3 gap-3">
               <label className={`flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -115,7 +115,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                 <input 
                   type="radio" 
                   value="cash" 
-                  {...register('type', { required: 'একাউন্টের ধরন আবশ্যক' })} 
+                  {...register('type', { required: 'অ্যাকাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
                 <Wallet size={24} className={selectedType === 'cash' ? 'text-green-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
@@ -132,7 +132,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                 <input 
                   type="radio" 
                   value="bank" 
-                  {...register('type', { required: 'একাউন্টের ধরন আবশ্যক' })} 
+                  {...register('type', { required: 'অ্যাকাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
                 <Building2 size={24} className={selectedType === 'bank' ? 'text-blue-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
@@ -149,7 +149,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                 <input 
                   type="radio" 
                   value="credit" 
-                  {...register('type', { required: 'একাউন্টের ধরন আবশ্যক' })} 
+                  {...register('type', { required: 'অ্যাকাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
                 <CreditCard size={24} className={selectedType === 'credit' ? 'text-purple-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
@@ -178,7 +178,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="একাউন্ট সম্পর্কে বিস্তারিত লিখুন..."
+                placeholder="অ্যাকাউন্ট সম্পর্কে বিস্তারিত লিখুন..."
               />
             </div>
           </div>
@@ -216,7 +216,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
               {getTypeIcon(selectedType)}
               <div>
                 <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {watch('name') || 'একাউন্টের নাম'}
+                  {watch('name') || 'অ্যাকাউন্টের নাম'}
                 </span>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   ৳{(watch('balance') || 0).toLocaleString()}

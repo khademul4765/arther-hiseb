@@ -179,17 +179,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Account */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              একাউন্ট *
+            অ্যাকাউন্ট *
             </label>
             <select
-              {...register('accountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              {...register('accountId', { required: 'অ্যাকাউন্ট নির্বাচন করুন' })}
               className={`w-full px-3 py-3 md:py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
               } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
             >
-              <option value="">একাউন্ট নির্বাচন করুন</option>
+              <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {accounts.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} - ৳{account.balance.toLocaleString()}

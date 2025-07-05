@@ -77,17 +77,17 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
           {/* From Account */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              কোন একাউন্ট থেকে *
+              কোন অ্যাকাউন্ট থেকে *
             </label>
             <select
-              {...register('fromAccountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              {...register('fromAccountId', { required: 'অ্যাকাউন্ট নির্বাচন করুন' })}
               className={`w-full px-3 py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
               } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             >
-              <option value="">একাউন্ট নির্বাচন করুন</option>
+              <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {accounts.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} - ৳{account.balance.toLocaleString()}
@@ -112,17 +112,17 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
           {/* To Account */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              কোন একাউন্টে *
+              কোন অ্যাকাউন্টে *
             </label>
             <select
-              {...register('toAccountId', { required: 'একাউন্ট নির্বাচন করুন' })}
+              {...register('toAccountId', { required: 'অ্যাকাউন্ট নির্বাচন করুন' })}
               className={`w-full px-3 py-2 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 
                   : 'bg-white border-gray-300 text-gray-900'
               } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             >
-              <option value="">একাউন্ট নির্বাচন করুন</option>
+              <option value="">অ্যাকাউন্ট নির্বাচন করুন</option>
               {availableToAccounts.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} - ৳{account.balance.toLocaleString()}

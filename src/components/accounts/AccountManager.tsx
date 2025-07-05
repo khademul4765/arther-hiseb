@@ -59,7 +59,7 @@ export const AccountManager: React.FC = () => {
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
         <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          একাউন্টস
+          অ্যাকাউন্টস
         </h1>
         <div className="flex space-x-2 md:space-x-3">
           <motion.button
@@ -91,7 +91,7 @@ export const AccountManager: React.FC = () => {
       >
         <h2 className="text-base md:text-lg font-medium opacity-90 mb-2">মোট ব্যালেন্স</h2>
         <p className="text-2xl md:text-4xl font-bold">৳{totalBalance.toLocaleString()}</p>
-        <p className="text-xs md:text-sm opacity-75 mt-2">{accounts.length}টি একাউন্ট</p>
+        <p className="text-xs md:text-sm opacity-75 mt-2">{accounts.length}টি অ্যাকাউন্ট</p>
       </motion.div>
 
       {/* Accounts Grid */}
@@ -159,10 +159,10 @@ export const AccountManager: React.FC = () => {
           <div className={`col-span-full ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 md:p-8 text-center`}>
             <Wallet size={40} className={`md:w-12 md:h-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
             <p className={`text-base md:text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              কোন একাউন্ট তৈরি করা হয়নি
+              কোনো অ্যাকাউন্ট তৈরি করা হয়নি
             </p>
             <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-2`}>
-              আপনার প্রথম একাউন্ট তৈরি করুন
+              আপনার প্রথম অ্যাকাউন্ট তৈরি করুন
             </p>
           </div>
         )}
@@ -198,10 +198,10 @@ export const AccountManager: React.FC = () => {
             className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
           >
             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-              একাউন্ট মুছবেন?
+              অ্যাকাউন্ট মুছবেন?
             </h3>
             <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
-              এই একাউন্টটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+              এই অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
             </p>
             <div className="flex space-x-3">
               <button

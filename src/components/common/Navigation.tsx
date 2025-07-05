@@ -6,25 +6,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const navigationItems = [
   { path: '/', name: 'ড্যাশবোর্ড', icon: Home },
-  { path: '/accounts', name: 'একাউন্টস', icon: Wallet },
+  { path: '/accounts', name: 'অ্যাকাউন্টস', icon: Wallet },
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
   { path: '/budgets', name: 'বাজেট', icon: TrendingUp },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
   { path: '/loans', name: 'ঋণ ও পাওনা', icon: Users },
   { path: '/reports', name: 'রিপোর্ট', icon: Receipt },
   { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
-  { path: '/account', name: 'আমার একাউন্ট', icon: User },
+  { path: '/account', name: 'প্রোফাইল', icon: User },
   { path: '/settings', name: 'সেটিংস', icon: Settings },
 ];
 
 // Bottom navigation items (mobile only)
 const bottomNavItems = [
-  { path: '/', name: 'হোম', icon: Home },
-  { path: '/accounts', name: 'একাউন্ট', icon: Wallet },
+
+  { path: '/accounts', name: 'অ্যাকাউন্ট', icon: Wallet },
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
+  { path: '/', name: 'হোম', icon: Home },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
-  { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
-  { path: '/account', name: 'প্রোফাইল', icon: User },
+  { path: '/budgets', name: 'বাজেট', icon: TrendingUp },
 ];
 
 export const Navigation: React.FC = () => {
@@ -95,7 +95,7 @@ export const Navigation: React.FC = () => {
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
               onClick={() => setShowMobileMenu(false)}
             />
-            
+
             {/* Sidebar */}
             <motion.nav
               initial={{ x: '-100%' }}
@@ -140,7 +140,7 @@ export const Navigation: React.FC = () => {
 
       {/* Mobile Bottom Navigation */}
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-40`}>
-        <div className="grid grid-cols-6 gap-1 p-2">
+        <div className="grid grid-cols-5 gap-1 p-2">
           {bottomNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
