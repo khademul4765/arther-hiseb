@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
 import { db } from '../config/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 
 interface StoreState {
   user: User | null;
@@ -107,70 +107,74 @@ export const useStore = create<StoreState>()(
 
       loadUserData: async (userId) => {
         try {
-          // Fetch accounts from Firestore
+          // Setup listeners for accounts
           const accountsQuery = query(collection(db, 'accounts'), where('userId', '==', userId));
-          const accountsSnapshot = await getDocs(accountsQuery);
-          const accounts: Account[] = accountsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Account));
+          onSnapshot(accountsQuery, (snapshot) => {
+            const accounts: Account[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Account));
+            set({ accounts: accounts });
+          });
 
-          // Fetch transactions from Firestore
+          // Setup listeners for transactions
           const transactionsQuery = query(collection(db, 'transactions'), where('userId', '==', userId));
-          const transactionsSnapshot = await getDocs(transactionsQuery);
-          const transactions: Transaction[] = transactionsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Transaction));
+          onSnapshot(transactionsQuery, (snapshot) => {
+            const transactions: Transaction[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Transaction));
+            set({ transactions: transactions });
+          });
 
-          // Fetch categories from Firestore
+          // Setup listeners for categories
           const categoriesQuery = query(collection(db, 'categories'), where('userId', '==', userId));
-          const categoriesSnapshot = await getDocs(categoriesQuery);
-          const categories: Category[] = categoriesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Category));
+          onSnapshot(categoriesQuery, (snapshot) => {
+            const categories: Category[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Category));
+            set({ categories: categories });
+          });
 
-          // Fetch budgets from Firestore
+          // Setup listeners for budgets
           const budgetsQuery = query(collection(db, 'budgets'), where('userId', '==', userId));
-          const budgetsSnapshot = await getDocs(budgetsQuery);
-          const budgets: Budget[] = budgetsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Budget));
+          onSnapshot(budgetsQuery, (snapshot) => {
+            const budgets: Budget[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Budget));
+            set({ budgets: budgets });
+          });
 
-          // Fetch goals from Firestore
+          // Setup listeners for goals
           const goalsQuery = query(collection(db, 'goals'), where('userId', '==', userId));
-          const goalsSnapshot = await getDocs(goalsQuery);
-          const goals: Goal[] = goalsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Goal));
+          onSnapshot(goalsQuery, (snapshot) => {
+            const goals: Goal[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Goal));
+            set({ goals: goals });
+          });
 
-          // Fetch loans from Firestore
+          // Setup listeners for loans
           const loansQuery = query(collection(db, 'loans'), where('userId', '==', userId));
-          const loansSnapshot = await getDocs(loansQuery);
-          const loans: Loan[] = loansSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Loan));
+          onSnapshot(loansQuery, (snapshot) => {
+            const loans: Loan[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Loan));
+            set({ loans: loans });
+          });
 
-          // Fetch notifications from Firestore
+          // Setup listeners for notifications
           const notificationsQuery = query(collection(db, 'notifications'), where('userId', '==', userId));
-          const notificationsSnapshot = await getDocs(notificationsQuery);
-          const notifications: Notification[] = notificationsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Notification));
-
-          set({
-            accounts: accounts,
-            transactions: transactions,
-            categories: categories,
-            budgets: budgets,
-            goals: goals,
-            loans: loans,
-            notifications: notifications,
+          onSnapshot(notificationsQuery, (snapshot) => {
+            const notifications: Notification[] = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Notification));
+            set({ notifications: notifications });
           });
         } catch (error) {
           console.error('Error fetching user data from Firestore:', error);
