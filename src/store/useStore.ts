@@ -308,10 +308,10 @@ export const useStore = create<StoreState>()(
         
         // Update account balances
         await updateDoc(doc(db, 'accounts', fromAccountId), {
-          balance: fromAccount.balance - transferAmount
+          balance: Number(fromAccount.balance) - transferAmount
         });
         await updateDoc(doc(db, 'accounts', toAccountId), {
-          balance: toAccount.balance + transferAmount
+          balance: Number(toAccount.balance) + transferAmount
         });
         
         // Create transfer transaction
@@ -347,27 +347,29 @@ export const useStore = create<StoreState>()(
         const transactionAmount = Number(transaction.amount);
         if (transactionAmount <= 0) return;
         
-        // Update account balance for income/expense transactions
-        if (transaction.type === 'income' || transaction.type === 'expense') {
-          const account = get().accounts.find(a => a.id === transaction.accountId);
-          if (account) {
-            const newBalance = transaction.type === 'income' 
-              ? account.balance + transactionAmount 
-              : account.balance - transactionAmount;
-            
-            await updateDoc(doc(db, 'accounts', transaction.accountId), {
-              balance: newBalance
-            });
-          }
-        }
-
-        await addDoc(collection(db, 'transactions'), {
+        // First add the transaction to Firestore
+        const transactionRef = await addDoc(collection(db, 'transactions'), {
           ...transaction,
           amount: transactionAmount,
           userId: user.id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        
+        // Then update account balance for income/expense transactions
+        if (transaction.type === 'income' || transaction.type === 'expense') {
+          const account = get().accounts.find(a => a.id === transaction.accountId);
+          if (account) {
+            const currentBalance = Number(account.balance) || 0;
+            const newBalance = transaction.type === 'income' 
+              ? currentBalance + transactionAmount 
+              : currentBalance - transactionAmount;
+            
+            await updateDoc(doc(db, 'accounts', transaction.accountId), {
+              balance: newBalance
+            });
+          }
+        }
       },
 
       updateTransaction: async (id, updates) => {
@@ -382,35 +384,40 @@ export const useStore = create<StoreState>()(
         if ((oldTransaction.type === 'income' || oldTransaction.type === 'expense') && 
             (newType === 'income' || newType === 'expense')) {
           
-          // Revert old transaction effect
+          // Get current account balance
           const oldAccount = get().accounts.find(a => a.id === oldTransaction.accountId);
           if (oldAccount) {
+            // Revert old transaction effect
+            const currentBalance = Number(oldAccount.balance) || 0;
             const revertedBalance = oldTransaction.type === 'income' 
-              ? oldAccount.balance - oldTransaction.amount 
-              : oldAccount.balance + oldTransaction.amount;
+              ? currentBalance - Number(oldTransaction.amount) 
+              : currentBalance + Number(oldTransaction.amount);
 
             await updateDoc(doc(db, 'accounts', oldTransaction.accountId), {
               balance: revertedBalance
             });
-          }
 
-          // Apply new transaction effect
-          const newAccount = get().accounts.find(a => a.id === newAccountId);
-          if (newAccount) {
-            const currentBalance = newAccountId === oldTransaction.accountId 
-              ? (oldAccount?.balance || 0) - oldTransaction.amount + (oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount)
-              : newAccount.balance;
+            // If account changed, apply to new account, otherwise apply to same account
+            const targetAccountId = newAccountId;
+            const targetAccount = get().accounts.find(a => a.id === targetAccountId);
             
-            const finalBalance = newType === 'income' 
-              ? currentBalance + newAmount 
-              : currentBalance - newAmount;
+            if (targetAccount) {
+              const targetCurrentBalance = targetAccountId === oldTransaction.accountId 
+                ? revertedBalance 
+                : Number(targetAccount.balance) || 0;
+              
+              const finalBalance = newType === 'income' 
+                ? targetCurrentBalance + newAmount 
+                : targetCurrentBalance - newAmount;
 
-            await updateDoc(doc(db, 'accounts', newAccountId), {
-              balance: finalBalance
-            });
+              await updateDoc(doc(db, 'accounts', targetAccountId), {
+                balance: finalBalance
+              });
+            }
           }
         }
 
+        // Update the transaction
         await updateDoc(doc(db, 'transactions', id), {
           ...updates,
           amount: newAmount,
@@ -426,9 +433,10 @@ export const useStore = create<StoreState>()(
         if (transaction.type === 'income' || transaction.type === 'expense') {
           const account = get().accounts.find(a => a.id === transaction.accountId);
           if (account) {
+            const currentBalance = Number(account.balance) || 0;
             const newBalance = transaction.type === 'income' 
-              ? account.balance - transaction.amount 
-              : account.balance + transaction.amount;
+              ? currentBalance - Number(transaction.amount) 
+              : currentBalance + Number(transaction.amount);
             
             await updateDoc(doc(db, 'accounts', transaction.accountId), {
               balance: newBalance
@@ -436,6 +444,7 @@ export const useStore = create<StoreState>()(
           }
         }
 
+        // Delete the transaction
         await deleteDoc(doc(db, 'transactions', id));
       },
 
@@ -517,22 +526,24 @@ export const useStore = create<StoreState>()(
           let calculatedBalance = 0;
           
           accountTransactions.forEach(t => {
+            const amount = Number(t.amount) || 0;
+            
             if (t.accountId === account.id) {
               if (t.type === 'income') {
-                calculatedBalance += Number(t.amount);
+                calculatedBalance += amount;
               } else if (t.type === 'expense') {
-                calculatedBalance -= Number(t.amount);
+                calculatedBalance -= amount;
               } else if (t.type === 'transfer') {
-                calculatedBalance -= Number(t.amount); // Money going out
+                calculatedBalance -= amount; // Money going out
               }
             }
             
             if (t.toAccountId === account.id && t.type === 'transfer') {
-              calculatedBalance += Number(t.amount); // Money coming in
+              calculatedBalance += amount; // Money coming in
             }
           });
           
-          if (Math.abs(account.balance - calculatedBalance) > 0.01) {
+          if (Math.abs(Number(account.balance) - calculatedBalance) > 0.01) {
             updateDoc(doc(db, 'accounts', account.id), { 
               balance: calculatedBalance 
             });
@@ -575,8 +586,8 @@ export const useStore = create<StoreState>()(
         if (!goal) return;
         
         const addAmount = Number(amount);
-        const newCurrentAmount = goal.currentAmount + addAmount;
-        const isCompleted = newCurrentAmount >= goal.targetAmount;
+        const newCurrentAmount = Number(goal.currentAmount) + addAmount;
+        const isCompleted = newCurrentAmount >= Number(goal.targetAmount);
         
         await updateDoc(doc(db, 'goals', goalId), {
           currentAmount: newCurrentAmount,
@@ -592,7 +603,7 @@ export const useStore = create<StoreState>()(
             priority: 'high',
             isRead: false
           });
-        } else if (newCurrentAmount >= goal.targetAmount * 0.8) {
+        } else if (newCurrentAmount >= Number(goal.targetAmount) * 0.8) {
           get().addNotification({
             title: 'লক্ষ্যের কাছাকাছি!',
             message: `"${goal.name}" লক্ষ্য ৮০% সম্পূর্ণ হয়েছে।`,
@@ -660,7 +671,7 @@ export const useStore = create<StoreState>()(
           );
         }
         
-        const newRemainingAmount = Math.max(0, loan.remainingAmount - paymentAmount);
+        const newRemainingAmount = Math.max(0, Number(loan.remainingAmount) - paymentAmount);
         const isCompleted = newRemainingAmount === 0;
         
         await updateDoc(doc(db, 'loans', loanId), {
