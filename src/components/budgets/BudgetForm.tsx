@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -24,7 +24,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
   onSubmit,
   budget
 }) => {
-  const { addBudget, updateBudget, categories, darkMode } = useStore();
+  const { addBudget, updateBudget, categories, darkMode, user } = useStore();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: budget ? {
       name: budget.name,
@@ -43,6 +43,43 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
 
   const period = watch('period');
   const selectedCategories = watch('categories') || [];
+
+  // Filter and deduplicate expense categories for current user
+  const expenseCategories = useMemo(() => {
+    if (!user) return [];
+    
+    const userExpenseCategories = categories.filter(c => 
+      c.userId === user.id && c.type === 'expense'
+    );
+    
+    // Remove duplicates based on name (case-insensitive)
+    const uniqueCategories = userExpenseCategories.reduce((acc, current) => {
+      const existing = acc.find(cat => 
+        cat.name.toLowerCase() === current.name.toLowerCase()
+      );
+      
+      if (!existing) {
+        acc.push(current);
+      } else {
+        // Keep the default one or the one created first
+        if (current.isDefault && !existing.isDefault) {
+          const index = acc.findIndex(cat => cat.id === existing.id);
+          acc[index] = current;
+        } else if (!current.isDefault && !existing.isDefault) {
+          // Keep the one created first
+          if (new Date(current.createdAt) < new Date(existing.createdAt)) {
+            const index = acc.findIndex(cat => cat.id === existing.id);
+            acc[index] = current;
+          }
+        }
+      }
+      
+      return acc;
+    }, [] as typeof userExpenseCategories);
+    
+    // Sort alphabetically by name
+    return uniqueCategories.sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories, user]);
 
   const onFormSubmit = (data: FormData) => {
     if (data.categories.length === 0) {
@@ -66,8 +103,6 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
 
     onSubmit();
   };
-
-  const expenseCategories = categories.filter(c => c.type === 'expense');
 
   const toggleCategory = (categoryName: string) => {
     const currentCategories = selectedCategories;
@@ -188,41 +223,59 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
             <div className={`max-h-48 overflow-y-auto border rounded-lg p-3 ${
               darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
             }`}>
-              <div className="grid grid-cols-1 gap-2">
-                {expenseCategories.map(category => {
-                  const isSelected = selectedCategories.includes(category.name);
-                  return (
-                    <motion.button
-                      key={category.id}
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleCategory(category.name)}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        isSelected
-                          ? darkMode 
-                            ? 'border-green-500 bg-green-900/20 text-white' 
-                            : 'border-green-500 bg-green-50 text-gray-900'
-                          : darkMode 
-                            ? 'border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700' 
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <span className="text-xl">{category.icon}</span>
-                        <span className="font-medium">{category.name}</span>
-                      </div>
-                      {isSelected && (
-                        <Check size={16} className="text-green-600" />
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
+              {expenseCategories.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    কোন খরচের ক্যাটেগরি পাওয়া যায়নি
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
+                    প্রথমে ক্যাটেগরি তৈরি করুন
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {expenseCategories.map(category => {
+                    const isSelected = selectedCategories.includes(category.name);
+                    return (
+                      <motion.button
+                        key={`${category.id}-${category.name}`} // Unique key to prevent React issues
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => toggleCategory(category.name)}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          isSelected
+                            ? darkMode 
+                              ? 'border-green-500 bg-green-900/20 text-white' 
+                              : 'border-green-500 bg-green-50 text-gray-900'
+                            : darkMode 
+                              ? 'border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700' 
+                              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-4 h-4 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="text-xl flex-shrink-0">{category.icon}</span>
+                          <span className="font-medium truncate">{category.name}</span>
+                          {category.isDefault && (
+                            <span className={`text-xs px-1 py-0.5 rounded ${
+                              darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              ডিফল্ট
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <Check size={16} className="text-green-600 flex-shrink-0" />
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {selectedCategories.length === 0 && (
               <p className="text-red-500 text-sm mt-1">অন্তত একটি ক্যাটেগরি নির্বাচন করুন</p>
@@ -297,7 +350,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
                   const category = expenseCategories.find(c => c.name === categoryName);
                   return (
                     <span
-                      key={categoryName}
+                      key={`preview-${categoryName}`}
                       className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm ${
                         darkMode ? 'bg-gray-600 text-gray-200' : 'bg-white text-gray-700'
                       } border`}
@@ -326,7 +379,8 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              disabled={selectedCategories.length === 0}
+              className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {budget ? 'আপডেট করুন' : 'সংরক্ষণ করুন'}
             </button>
