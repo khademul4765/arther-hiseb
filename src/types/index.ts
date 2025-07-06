@@ -50,11 +50,12 @@ export interface Budget {
   name: string;
   amount: number;
   spent: number;
-  category: string;
+  categories: string[]; // Changed from single category to multiple categories
   period: 'weekly' | 'monthly' | 'yearly';
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+  categorySpending: { [categoryName: string]: number }; // Track spending per category
   createdAt: Date;
 }
 

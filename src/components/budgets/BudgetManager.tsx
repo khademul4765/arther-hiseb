@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { BudgetForm } from './BudgetForm';
+import { BudgetDetails } from './BudgetDetails';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const BudgetManager: React.FC = () => {
@@ -10,6 +11,7 @@ export const BudgetManager: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState<string | null>(null);
 
   const handleEdit = (budget: any) => {
     setEditingBudget(budget);
@@ -77,6 +79,15 @@ export const BudgetManager: React.FC = () => {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowDetails(budget.id)}
+                    className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                    title="বিস্তারিত দেখুন"
+                  >
+                    <Eye size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleEdit(budget)}
                     className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                   >
@@ -94,16 +105,42 @@ export const BudgetManager: React.FC = () => {
               </div>
 
               <div className="space-y-3">
+                {/* Categories */}
+                <div>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                    ক্যাটেগরি ({budget.categories?.length || 0}টি):
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {(budget.categories || []).slice(0, 3).map((categoryName: string) => (
+                      <span
+                        key={categoryName}
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {categoryName}
+                      </span>
+                    ))}
+                    {(budget.categories?.length || 0) > 3 && (
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        +{(budget.categories?.length || 0) - 3} আরও
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    ক্যাটেগরি: {budget.category}
-                  </span>
                   <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${bgColor}`}>
                     <Icon size={12} className={color} />
                     <span className={`text-xs font-medium ${color}`}>
                       {Math.round(percentage)}%
                     </span>
                   </div>
+                  <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {budget.period === 'weekly' ? 'সাপ্তাহিক' : budget.period === 'monthly' ? 'মাসিক' : 'বার্ষিক'}
+                  </span>
                 </div>
 
                 <div className={`w-full bg-gray-200 rounded-full h-3 ${darkMode ? 'bg-gray-600' : ''}`}>
@@ -162,6 +199,14 @@ export const BudgetManager: React.FC = () => {
           budget={editingBudget}
           onClose={handleCloseForm}
           onSubmit={handleCloseForm}
+        />
+      )}
+
+      {/* Budget Details Modal */}
+      {showDetails && (
+        <BudgetDetails
+          budgetId={showDetails}
+          onClose={() => setShowDetails(null)}
         />
       )}
 

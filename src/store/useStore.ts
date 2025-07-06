@@ -198,7 +198,9 @@ export const useStore = create<StoreState>()(
                 id: doc.id,
                 ...convertTimestampsToDate(data),
                 amount: Number(data.amount) || 0,
-                spent: Number(data.spent) || 0
+                spent: Number(data.spent) || 0,
+                categories: data.categories || [], // Ensure categories array exists
+                categorySpending: data.categorySpending || {} // Ensure categorySpending object exists
               } as Budget;
             });
             set({ budgets: budgets });
@@ -511,6 +513,8 @@ export const useStore = create<StoreState>()(
           amount: Number(budget.amount) || 0,
           userId: user.id,
           spent: 0,
+          categories: budget.categories || [],
+          categorySpending: {},
           createdAt: serverTimestamp(),
         });
       },
@@ -519,6 +523,9 @@ export const useStore = create<StoreState>()(
         const updateData = { ...updates };
         if (updateData.amount !== undefined) {
           updateData.amount = Number(updateData.amount) || 0;
+        }
+        if (updateData.categories && !updateData.categorySpending) {
+          updateData.categorySpending = {};
         }
         await updateDoc(doc(db, 'budgets', id), updateData);
       },
@@ -531,17 +538,31 @@ export const useStore = create<StoreState>()(
         const { budgets, transactions } = get();
         
         budgets.forEach(async (budget) => {
-          const budgetTransactions = transactions.filter(t => 
-            t.type === 'expense' && 
-            t.category === budget.category &&
-            new Date(t.date) >= new Date(budget.startDate) &&
-            new Date(t.date) <= new Date(budget.endDate)
-          );
+          // Calculate total spent and category-wise spending for multiple categories
+          const budgetCategories = budget.categories || [];
+          let totalSpent = 0;
+          const categorySpending: { [key: string]: number } = {};
           
-          const spent = budgetTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+          budgetCategories.forEach(categoryName => {
+            const categoryTransactions = transactions.filter(t => 
+              t.type === 'expense' && 
+              t.category === categoryName &&
+              new Date(t.date) >= new Date(budget.startDate) &&
+              new Date(t.date) <= new Date(budget.endDate)
+            );
+            
+            const categorySpent = categoryTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+            categorySpending[categoryName] = categorySpent;
+            totalSpent += categorySpent;
+          });
           
-          if (Math.abs(budget.spent - spent) > 0.01) { // Only update if there's a significant difference
-            await updateDoc(doc(db, 'budgets', budget.id), { spent });
+          // Only update if there's a significant difference
+          if (Math.abs(budget.spent - totalSpent) > 0.01 || 
+              JSON.stringify(budget.categorySpending) !== JSON.stringify(categorySpending)) {
+            await updateDoc(doc(db, 'budgets', budget.id), { 
+              spent: totalSpent,
+              categorySpending 
+            });
           }
         });
       },
