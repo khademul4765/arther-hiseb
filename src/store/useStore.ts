@@ -68,6 +68,7 @@ interface StoreState {
   loadUserData: (userId: string) => void;
   calculateBudgetSpent: () => void;
   recalculateAccountBalances: () => void;
+  cleanupDuplicateCategories: (userId: string) => Promise<void>;
 }
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -121,6 +122,9 @@ export const useStore = create<StoreState>()(
             const userCategories = get().categories.filter(c => c.userId === user.id);
             if (userCategories.length === 0) {
               await get().initializeDefaultCategories(user.id);
+            } else {
+              // Clean up any duplicate categories
+              await get().cleanupDuplicateCategories(user.id);
             }
 
             const userAccounts = get().accounts.filter(a => a.userId === user.id);
@@ -452,6 +456,19 @@ export const useStore = create<StoreState>()(
       addCategory: async (category) => {
         const user = get().user;
         if (!user) return;
+
+        // Check for duplicate categories before adding
+        const existingCategory = get().categories.find(c => 
+          c.userId === user.id &&
+          c.name.toLowerCase() === category.name.toLowerCase() && 
+          c.type === category.type
+        );
+
+        if (existingCategory) {
+          console.warn('Duplicate category detected, not adding:', category.name);
+          return;
+        }
+
         await addDoc(collection(db, 'categories'), {
           ...category,
           userId: user.id,
@@ -468,6 +485,20 @@ export const useStore = create<StoreState>()(
       deleteCategory: async (id) => {
         const category = get().categories.find(c => c.id === id);
         if (category?.isDefault) return;
+        
+        // Check if category is being used in transactions
+        const hasTransactions = get().transactions.some(t => t.category === category?.name);
+        if (hasTransactions) {
+          get().addNotification({
+            title: 'ক্যাটেগরি মুছতে পারবেন না',
+            message: 'এই ক্যাটেগরিতে লেনদেন রয়েছে। প্রথমে সব লেনদেন মুছুন।',
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+          return;
+        }
+        
         await deleteDoc(doc(db, 'categories', id));
       },
 
@@ -724,6 +755,13 @@ export const useStore = create<StoreState>()(
 
       // Utility Actions
       initializeDefaultCategories: async (userId) => {
+        // Check if default categories already exist
+        const existingCategories = get().categories.filter(c => c.userId === userId);
+        if (existingCategories.length > 0) {
+          console.log('Categories already exist, skipping initialization');
+          return;
+        }
+
         const defaultCategories = [
           { name: 'খাবার', color: '#FF6B6B', icon: '🍽️', type: 'expense', isDefault: true },
           { name: 'পরিবহন', color: '#4ECDC4', icon: '🚗', type: 'expense', isDefault: true },
@@ -766,6 +804,47 @@ export const useStore = create<StoreState>()(
             userId,
             createdAt: serverTimestamp(),
           });
+        }
+      },
+
+      cleanupDuplicateCategories: async (userId) => {
+        const userCategories = get().categories.filter(c => c.userId === userId);
+        const duplicateGroups = new Map<string, Category[]>();
+        
+        // Group categories by name and type
+        userCategories.forEach(category => {
+          const key = `${category.name.toLowerCase()}-${category.type}`;
+          if (!duplicateGroups.has(key)) {
+            duplicateGroups.set(key, []);
+          }
+          duplicateGroups.get(key)!.push(category);
+        });
+        
+        // Remove duplicates, keeping the default one or the oldest one
+        for (const [key, categories] of duplicateGroups) {
+          if (categories.length > 1) {
+            console.log(`Found ${categories.length} duplicates for ${key}, cleaning up...`);
+            
+            // Sort by priority: default first, then by creation date
+            categories.sort((a, b) => {
+              if (a.isDefault && !b.isDefault) return -1;
+              if (!a.isDefault && b.isDefault) return 1;
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            });
+            
+            // Keep the first one, delete the rest
+            const toKeep = categories[0];
+            const toDelete = categories.slice(1);
+            
+            for (const category of toDelete) {
+              try {
+                await deleteDoc(doc(db, 'categories', category.id));
+                console.log(`Deleted duplicate category: ${category.name} (${category.id})`);
+              } catch (error) {
+                console.error(`Error deleting duplicate category ${category.id}:`, error);
+              }
+            }
+          }
         }
       },
 

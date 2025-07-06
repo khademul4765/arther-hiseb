@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { CategoryForm } from './CategoryForm';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, Tag } from 'lucide-react';
 
 export const CategoryManager: React.FC = () => {
-  const { categories, deleteCategory, darkMode } = useStore();
+  const { categories, deleteCategory, darkMode, user } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -25,8 +25,43 @@ export const CategoryManager: React.FC = () => {
     setEditingCategory(null);
   };
 
-  const expenseCategories = categories.filter(c => c.type === 'expense');
-  const incomeCategories = categories.filter(c => c.type === 'income');
+  // Filter categories to only show current user's categories and remove duplicates
+  const userCategories = useMemo(() => {
+    if (!user) return [];
+    
+    const filteredCategories = categories.filter(c => c.userId === user.id);
+    
+    // Remove duplicates based on name and type combination
+    const uniqueCategories = filteredCategories.reduce((acc, current) => {
+      const existing = acc.find(cat => 
+        cat.name.toLowerCase() === current.name.toLowerCase() && 
+        cat.type === current.type
+      );
+      
+      if (!existing) {
+        acc.push(current);
+      } else {
+        // Keep the one that was created first (or is default)
+        if (current.isDefault && !existing.isDefault) {
+          const index = acc.findIndex(cat => cat.id === existing.id);
+          acc[index] = current;
+        } else if (!current.isDefault && !existing.isDefault) {
+          // Keep the one created first
+          if (new Date(current.createdAt) < new Date(existing.createdAt)) {
+            const index = acc.findIndex(cat => cat.id === existing.id);
+            acc[index] = current;
+          }
+        }
+      }
+      
+      return acc;
+    }, [] as typeof filteredCategories);
+    
+    return uniqueCategories;
+  }, [categories, user]);
+
+  const expenseCategories = userCategories.filter(c => c.type === 'expense');
+  const incomeCategories = userCategories.filter(c => c.type === 'income');
 
   return (
     <div className="space-y-6">
@@ -55,7 +90,7 @@ export const CategoryManager: React.FC = () => {
         >
           <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 flex items-center`}>
             <Tag size={20} className="mr-2 text-red-500" />
-            খরচের ক্যাটেগরি
+            খরচের ক্যাটেগরি ({expenseCategories.length})
           </h2>
           <div className="space-y-3">
             {expenseCategories.map((category) => (
@@ -103,6 +138,11 @@ export const CategoryManager: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+            {expenseCategories.length === 0 && (
+              <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                কোন খরচের ক্যাটেগরি নেই
+              </p>
+            )}
           </div>
         </motion.div>
 
@@ -115,7 +155,7 @@ export const CategoryManager: React.FC = () => {
         >
           <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 flex items-center`}>
             <Tag size={20} className="mr-2 text-green-500" />
-            আয়ের ক্যাটেগরি
+            আয়ের ক্যাটেগরি ({incomeCategories.length})
           </h2>
           <div className="space-y-3">
             {incomeCategories.map((category) => (
@@ -163,6 +203,11 @@ export const CategoryManager: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+            {incomeCategories.length === 0 && (
+              <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                কোন আয়ের ক্যাটেগরি নেই
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

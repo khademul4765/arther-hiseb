@@ -33,7 +33,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   onSubmit,
   category
 }) => {
-  const { addCategory, updateCategory, darkMode } = useStore();
+  const { addCategory, updateCategory, categories, user, darkMode } = useStore();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: category ? {
       name: category.name,
@@ -49,8 +49,25 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const selectedColor = watch('color');
   const selectedIcon = watch('icon');
+  const selectedType = watch('type');
+  const selectedName = watch('name');
 
   const onFormSubmit = (data: FormData) => {
+    if (!user) return;
+
+    // Check for duplicate categories (case-insensitive)
+    const existingCategory = categories.find(c => 
+      c.userId === user.id &&
+      c.name.toLowerCase() === data.name.toLowerCase() && 
+      c.type === data.type &&
+      c.id !== category?.id // Exclude current category when editing
+    );
+
+    if (existingCategory) {
+      alert('এই নামে ইতিমধ্যে একটি ক্যাটেগরি রয়েছে। অন্য নাম ব্যবহার করুন।');
+      return;
+    }
+
     if (category) {
       updateCategory(category.id, data);
     } else {
@@ -94,7 +111,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               <Tag size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <input
                 type="text"
-                {...register('name', { required: 'ক্যাটেগরির নাম আবশ্যক' })}
+                {...register('name', { 
+                  required: 'ক্যাটেগরির নাম আবশ্যক',
+                  minLength: { value: 2, message: 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' },
+                  maxLength: { value: 30, message: 'নাম সর্বোচ্চ ৩০ অক্ষরের হতে পারে' }
+                })}
                 className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
@@ -137,8 +158,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   key={color}
                   type="button"
                   onClick={() => setValue('color', color)}
-                  className={`w-10 h-10 rounded-lg border-2 ${
-                    selectedColor === color ? 'border-gray-900' : 'border-gray-300'
+                  className={`w-10 h-10 rounded-lg border-2 transition-all ${
+                    selectedColor === color 
+                      ? 'border-gray-900 scale-110 shadow-lg' 
+                      : 'border-gray-300 hover:scale-105'
                   }`}
                   style={{ backgroundColor: color }}
                 />
@@ -157,10 +180,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   key={icon}
                   type="button"
                   onClick={() => setValue('icon', icon)}
-                  className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center transition-all ${
                     selectedIcon === icon 
-                      ? darkMode ? 'border-green-500 bg-gray-700' : 'border-green-500 bg-green-50'
-                      : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
+                      ? darkMode ? 'border-green-500 bg-gray-700 scale-110' : 'border-green-500 bg-green-50 scale-110'
+                      : darkMode ? 'border-gray-600 bg-gray-700 hover:bg-gray-600' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
                   }`}
                 >
                   {icon}
@@ -181,7 +204,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               />
               <span className="text-2xl">{selectedIcon}</span>
               <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {watch('name') || 'ক্যাটেগরির নাম'}
+                {selectedName || 'ক্যাটেগরির নাম'}
+              </span>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                selectedType === 'income' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {selectedType === 'income' ? 'আয়' : 'খরচ'}
               </span>
             </div>
           </div>
