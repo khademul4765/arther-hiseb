@@ -48,8 +48,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       tags: transaction.tags.join(', ')
     } : {
       type: defaultType,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5),
+      date: new Date().toISOString().split('T')[0], // Always today
+      time: new Date().toTimeString().slice(0, 5), // Current time
       accountId: defaultCashAccount?.id || accounts[0]?.id || ''
     }
   });
@@ -57,10 +57,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   // Guarantee reset to today's date for new transactions
   React.useEffect(() => {
     if (!transaction) {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      const currentTime = today.toTimeString().slice(0, 5);
+      
       reset({
         type: defaultType,
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
+        date: todayString,
+        time: currentTime,
         accountId: defaultCashAccount?.id || accounts[0]?.id || '',
         amount: undefined,
         category: '',

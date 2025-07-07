@@ -369,14 +369,19 @@ export const useStore = create<StoreState>()(
         const transactionAmount = Number(transaction.amount);
         if (transactionAmount <= 0) return;
         
-        // First add the transaction to Firestore
-        const transactionRef = await addDoc(collection(db, 'transactions'), {
+        // Ensure the transaction has today's date if not specified
+        const transactionData = {
           ...transaction,
           amount: transactionAmount,
+          date: transaction.date || new Date(), // Default to today if no date provided
+          time: transaction.time || new Date().toTimeString().slice(0, 5), // Default to current time
           userId: user.id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        });
+        };
+        
+        // First add the transaction to Firestore
+        const transactionRef = await addDoc(collection(db, 'transactions'), transactionData);
         
         // Then update account balance for income/expense transactions
         if (transaction.type === 'income' || transaction.type === 'expense') {

@@ -29,26 +29,60 @@ export const TransactionList: React.FC = () => {
   });
 
   const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    // First sort by date (newest first)
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
     if (dateA !== dateB) {
-      return dateB - dateA;
+      return dateB - dateA; // Latest date first
     }
-    // If dates are equal, compare time (assuming HH:mm format)
-    function parseTime(t?: string) {
-      if (!t || !/^\d{2}:\d{2}$/.test(t)) return 0;
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
+    
+    // If dates are equal, sort by time (latest time first)
+    function parseTime(timeStr?: string) {
+      if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return 0;
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
     }
+    
     const timeA = parseTime(a.time);
     const timeB = parseTime(b.time);
-    return timeB - timeA;
+    if (timeA !== timeB) {
+      return timeB - timeA; // Latest time first
+    }
+    
+    // If both date and time are equal, sort by creation time (newest first)
+    const createdA = new Date(a.createdAt || a.date).getTime();
+    const createdB = new Date(b.createdAt || b.date).getTime();
+    return createdB - createdA;
   });
 
   // Group transactions by date
   const groupedTransactions: { [date: string]: Transaction[] } = {};
   sortedTransactions.forEach((transaction) => {
-    const dateKey = new Date(transaction.date).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+    const transactionDate = new Date(transaction.date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let dateKey: string;
+    
+    // Check if it's today
+    if (transactionDate.toDateString() === today.toDateString()) {
+      dateKey = 'আজ (' + transactionDate.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' }) + ')';
+    }
+    // Check if it's yesterday
+    else if (transactionDate.toDateString() === yesterday.toDateString()) {
+      dateKey = 'গতকাল (' + transactionDate.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' }) + ')';
+    }
+    // For other dates
+    else {
+      dateKey = transactionDate.toLocaleDateString('bn-BD', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+      });
+    }
+    
     if (!groupedTransactions[dateKey]) groupedTransactions[dateKey] = [];
     groupedTransactions[dateKey].push(transaction);
   });
