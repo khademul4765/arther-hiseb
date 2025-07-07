@@ -13,6 +13,7 @@ export interface Account {
   description: string;
   balance: number;
   createdAt: Date;
+  isDefault?: boolean;
 }
 
 export interface Transaction {

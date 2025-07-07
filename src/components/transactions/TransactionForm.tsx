@@ -32,7 +32,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   defaultType = 'expense'
 }) => {
   const { addTransaction, updateTransaction, categories, accounts, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
+  // Find the default cash account
+  const defaultCashAccount = accounts.find(a => a.type === 'cash' && a.isDefault);
+
+  const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<FormData>({
     defaultValues: transaction ? {
       amount: transaction.amount,
       type: transaction.type as 'income' | 'expense',
@@ -47,9 +50,26 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       type: defaultType,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
-      accountId: accounts[0]?.id || ''
+      accountId: defaultCashAccount?.id || accounts[0]?.id || ''
     }
   });
+
+  // Guarantee reset to today's date for new transactions
+  React.useEffect(() => {
+    if (!transaction) {
+      reset({
+        type: defaultType,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        accountId: defaultCashAccount?.id || accounts[0]?.id || '',
+        amount: undefined,
+        category: '',
+        person: '',
+        note: '',
+        tags: ''
+      });
+    }
+  }, [transaction, reset, defaultType, defaultCashAccount, accounts]);
 
   const selectedType = watch('type');
   const selectedAccountId = watch('accountId');
@@ -123,7 +143,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Amount */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               পরিমাণ *
             </label>
             <div className="relative">
@@ -147,7 +167,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Type */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               ধরন *
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -187,7 +207,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Account */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
             অ্যাকাউন্ট *
             </label>
             <select
@@ -222,7 +242,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Category */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ক্যাটেগরি *
             </label>
             {selectedType !== 'transfer' && (
@@ -242,7 +262,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Date and Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 তারিখ *
               </label>
               <div className="relative">
@@ -259,7 +279,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
             </div>
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 সময় *
               </label>
               <div className="relative">
@@ -279,7 +299,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Person */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ব্যক্তি / প্রতিষ্ঠান
             </label>
             <div className="relative">
@@ -299,7 +319,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Note */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               নোট
             </label>
             <div className="relative">
@@ -319,7 +339,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* Tags */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ট্যাগ
             </label>
             <div className="relative">

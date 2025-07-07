@@ -29,7 +29,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <p className={`text-sm md:text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
+          <p className={`text-xs md:text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
             {title}
           </p>
           <div className={`text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mt-1 truncate`}>

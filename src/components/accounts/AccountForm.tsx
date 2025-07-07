@@ -15,19 +15,22 @@ interface FormData {
   type: 'cash' | 'bank' | 'mfs';
   description: string;
   balance: number;
+  isDefault?: boolean;
 }
 
 export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, account }) => {
-  const { addAccount, updateAccount, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
+  const { addAccount, updateAccount, darkMode, accounts } = useStore();
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: account ? {
       name: account.name,
       type: account.type,
       description: account.description,
-      balance: account.balance
+      balance: account.balance,
+      isDefault: account.isDefault || false
     } : {
       type: 'cash',
-      balance: 0
+      balance: 0,
+      isDefault: false
     }
   });
 
@@ -41,11 +44,18 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
 
   const selectedType = watch('type');
 
-  const onFormSubmit = (data: FormData) => {
+  const onFormSubmit = async (data: FormData) => {
+    if (data.isDefault) {
+      for (const acc of accounts) {
+        if (!account || acc.id !== account.id) {
+          await updateAccount(acc.id, { isDefault: false });
+        }
+      }
+    }
     if (account) {
-      updateAccount(account.id, data);
+      await updateAccount(account.id, data);
     } else {
-      addAccount(data);
+      await addAccount(data);
     }
     onSubmit();
   };
@@ -91,7 +101,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Name */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               অ্যাকাউন্টের নাম *
             </label>
             <input
@@ -111,7 +121,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
 
           {/* Type */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               অ্যাকাউন্টের ধরন *
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -171,7 +181,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
 
           {/* Description */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               বিবরণ
             </label>
             <div className="relative">
@@ -188,9 +198,27 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
             </div>
           </div>
 
+          {/* Default Account Toggle */}
+          <div className="flex items-center mt-6 mb-2">
+            <label className={`mr-4 text-base md:text-lg font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>ডিফল্ট অ্যাকাউন্ট</label>
+            <button
+              type="button"
+              onClick={() => setValue('isDefault', !watch('isDefault'))}
+              className={`relative w-14 h-8 rounded-full transition-colors duration-200 focus:outline-none border-2 ${watch('isDefault') ? 'bg-green-500 border-green-600' : 'bg-gray-300 border-gray-400'}`}
+              aria-pressed={watch('isDefault')}
+              title={watch('isDefault') ? 'ডিফল্ট অ্যাকাউন্ট' : 'ডিফল্ট করুন'}
+            >
+              <span
+                className={`absolute left-0 top-0 w-8 h-8 rounded-full bg-white shadow transition-transform duration-200 ${watch('isDefault') ? 'translate-x-6' : ''}`}
+                style={{ transform: watch('isDefault') ? 'translateX(24px)' : 'translateX(0)' }}
+              />
+              <span className="sr-only">{watch('isDefault') ? 'ডিফল্ট অ্যাকাউন্ট' : 'ডিফল্ট করুন'}</span>
+            </button>
+          </div>
+
           {/* Initial Balance */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               প্রাথমিক ব্যালেন্স *
             </label>
             <div className="relative">
@@ -214,7 +242,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
 
           {/* Preview */}
           <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-            <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            <p className={`text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               প্রিভিউ:
             </p>
             <div className="flex items-center space-x-3">

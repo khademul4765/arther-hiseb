@@ -83,7 +83,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Name */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               লক্ষ্যের নাম *
             </label>
             <div className="relative">
@@ -106,7 +106,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
           {/* Target Amount */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               লক্ষ্যমাত্রা *
             </label>
             <div className="relative">
@@ -130,7 +130,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
           {/* Deadline */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               শেষ তারিখ *
             </label>
             <div className="relative">

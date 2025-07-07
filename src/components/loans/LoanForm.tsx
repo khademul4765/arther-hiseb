@@ -108,7 +108,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Type */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ধরন *
             </label>
             <select
@@ -126,7 +126,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
           {/* Amount */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               পরিমাণ *
             </label>
             <div className="relative">
@@ -150,7 +150,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
           {/* Person Name */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ব্যক্তি/ প্রতিষ্ঠানের নাম *
             </label>
             <div className="relative">
@@ -173,7 +173,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
           {/* Person Phone */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ফোন নম্বর
             </label>
             <div className="relative">
@@ -193,7 +193,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
           {/* Person Address */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ঠিকানা
             </label>
             <div className="relative">
@@ -214,7 +214,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
           {/* Date and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 তারিখ *
               </label>
               <div className="relative">
@@ -231,7 +231,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
               </div>
             </div>
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 শেষ তারিখ
               </label>
               <div className="relative">
@@ -251,7 +251,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
           {/* Note */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               নোট
             </label>
             <div className="relative">

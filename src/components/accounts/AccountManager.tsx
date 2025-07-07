@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
@@ -10,8 +10,81 @@ import 'jspdf-autotable';
 import { CategorySelect } from '../common/CategorySelect';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
+interface AccountCardProps {
+  account: any;
+  darkMode: boolean;
+  getAccountIcon: (type: string) => React.ReactNode;
+  getAccountTypeName: (type: string) => string;
+  onEdit: (account: any) => void;
+  onDelete: (id: string) => void;
+  setShowDeleteConfirm: (id: string) => void;
+}
+
+const AccountCard: React.FC<AccountCardProps & { isDefault?: boolean; onSetDefault?: (id: string) => void }> = ({ account, darkMode, getAccountIcon, getAccountTypeName, onEdit, setShowDeleteConfirm, isDefault, onSetDefault }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    whileHover={{ scale: 1.035 }}
+    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-green-200 dark:hover:ring-green-900/30 backdrop-blur-sm transition-all duration-300`}
+  >
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center space-x-3">
+        {getAccountIcon(account.type)}
+        <div className="min-w-0 flex-1">
+          <h3 className={`text-base md:text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
+            {account.name}
+          </h3>
+          <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{getAccountTypeName(account.type)}</p>
+        </div>
+      </div>
+      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
+        {/* Default account indicator/button for cash accounts */}
+        {onSetDefault && (
+          <button
+            onClick={() => onSetDefault(account.id)}
+            className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border ${account.isDefault ? 'bg-green-500 border-green-600' : 'bg-gray-300 border-gray-400'}`}
+            aria-pressed={account.isDefault}
+            type="button"
+            title={account.isDefault ? 'ডিফল্ট অ্যাকাউন্ট' : 'ডিফল্ট করুন'}
+          >
+            <span
+              className={`absolute left-0 top-0 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200 ${account.isDefault ? 'translate-x-6' : ''}`}
+              style={{ transform: account.isDefault ? 'translateX(24px)' : 'translateX(0)' }}
+            />
+            <span className="sr-only">{account.isDefault ? 'ডিফল্ট অ্যাকাউন্ট' : 'ডিফল্ট করুন'}</span>
+          </button>
+        )}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => onEdit(account)}
+          className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+        >
+          <Edit2 size={14} className={`md:w-4 md:h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowDeleteConfirm(account.id)}
+          className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+        >
+          <Trash2 size={14} className="md:w-4 md:h-4 text-red-500" />
+        </motion.button>
+      </div>
+    </div>
+    <div className="flex flex-col items-center justify-center flex-1 text-center space-y-2 mt-6 mb-6">
+      <p className={`text-sm md:text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>বর্তমান ব্যালেন্স</p>
+      <p className={`text-2xl md:text-3xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{account.balance.toLocaleString()} ৳</p>
+      {account.description && (
+        <p className={`text-base md:text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'} line-clamp-2`}>{account.description}</p>
+      )}
+    </div>
+  </motion.div>
+);
+
 export const AccountManager: React.FC = () => {
-  const { accounts, deleteAccount, darkMode, transactions } = useStore();
+  const { accounts, deleteAccount, darkMode, transactions, updateAccount } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
@@ -26,6 +99,14 @@ export const AccountManager: React.FC = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Remove defaultAccountId state and useEffect
+
+  const handleSetDefault = async (id: string) => {
+    for (const acc of accounts) {
+      await updateAccount(acc.id, { isDefault: acc.id === id });
+    }
+  };
 
   const handleEdit = (account: any) => {
     setEditingAccount(account);
@@ -78,7 +159,7 @@ export const AccountManager: React.FC = () => {
   const getAccountTypeName = (type: string) => {
     switch (type) {
       case 'cash':
-        return 'নগদ';
+        return 'নগদ টাকা';
       case 'bank':
         return 'ব্যাংক';
       case 'mfs':
@@ -147,9 +228,14 @@ export const AccountManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className={`text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>অ্যাকাউন্টস</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div>
+          <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
+            অ্যাকাউন্টস
+          </h1>
+          <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mt-2`}></div>
+        </div>
         <div className="flex space-x-2 md:space-x-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -189,54 +275,17 @@ export const AccountManager: React.FC = () => {
       {/* Accounts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {accounts.map((account) => (
-          <motion.div
+          <AccountCard
             key={account.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.025, y: -2, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)' }}
-            className={`border rounded-xl p-5 md:p-7 cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3`}
-            onClick={() => { setSelectedAccount(account); setShowAccountTransactions(true); }}
-          >
-            <div className="flex items-center gap-4 mb-2">
-              <div className={`rounded-lg p-2 text-2xl flex items-center justify-center ${
-                account.type === 'cash' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700'
-              }`}>
-                {getAccountIcon(account.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className={`text-base md:text-lg font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{account.name}</h3>
-                <span className={`text-xs font-medium ${account.type === 'cash' ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}`}>{getAccountTypeName(account.type)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={e => { e.stopPropagation(); handleEdit(account); }}
-                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
-                >
-                  <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={e => { e.stopPropagation(); setShowDeleteConfirm(account.id); }}
-                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
-                >
-                  <Trash2 size={16} className="text-red-500" />
-                </motion.button>
-              </div>
-            </div>
-            <div className="flex items-end justify-between gap-2">
-              <div>
-                <p className="text-xs opacity-70 mb-1">বর্তমান ব্যালেন্স</p>
-                <p className={`text-xl md:text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{account.balance.toLocaleString()} ৳</p>
-              </div>
-              {account.description && (
-                <span className="text-xs text-gray-400 dark:text-gray-500 text-right line-clamp-2 max-w-[120px] md:max-w-[180px]">{account.description}</span>
-              )}
-            </div>
-          </motion.div>
+            account={account}
+            darkMode={darkMode}
+            getAccountIcon={getAccountIcon}
+            getAccountTypeName={getAccountTypeName}
+            onEdit={handleEdit}
+            setShowDeleteConfirm={setShowDeleteConfirm}
+            isDefault={account.isDefault}
+            onSetDefault={handleSetDefault}
+          />
         ))}
 
         {accounts.length === 0 && (

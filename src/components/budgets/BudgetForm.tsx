@@ -159,7 +159,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
           {/* Name */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               বাজেটের নাম *
             </label>
             <div className="relative">
@@ -182,7 +182,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
 
           {/* Amount */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               পরিমাণ *
             </label>
             <div className="relative">
@@ -207,21 +207,21 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
           {/* Categories */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label className={`text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 ক্যাটেগরি নির্বাচন করুন * ({selectedCategories.length} টি নির্বাচিত)
               </label>
               <div className="flex space-x-2">
                 <button
                   type="button"
                   onClick={selectAllCategories}
-                  className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  className="text-sm px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                 >
                   সব নির্বাচন
                 </button>
                 <button
                   type="button"
                   onClick={clearAllCategories}
-                  className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                  className="text-sm px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
                 >
                   সব বাতিল
                 </button>
@@ -292,7 +292,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
 
           {/* Period */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               সময়কাল *
             </label>
             <select
@@ -312,7 +312,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 শুরুর তারিখ *
               </label>
               <div className="relative">
@@ -329,7 +329,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
               </div>
             </div>
             <div>
-              <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 শেষের তারিখ *
               </label>
               <div className="relative">

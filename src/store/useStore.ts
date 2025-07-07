@@ -1124,6 +1124,8 @@ export const useStore = create<StoreState>()(
       },
 
       initializeDefaultAccounts: async (userId) => {
+        // Fetch current accounts for the user
+        const currentAccounts = get().accounts.filter(a => a.userId === userId);
         const defaultAccounts = [
           {
             name: 'নগদ',
@@ -1140,11 +1142,16 @@ export const useStore = create<StoreState>()(
         ];
 
         for (const account of defaultAccounts) {
-          await addDoc(collection(db, 'accounts'), {
-            ...account,
-            userId,
-            createdAt: serverTimestamp(),
-          });
+          const exists = currentAccounts.some(
+            a => a.name === account.name && a.type === account.type
+          );
+          if (!exists) {
+            await addDoc(collection(db, 'accounts'), {
+              ...account,
+              userId,
+              createdAt: serverTimestamp(),
+            });
+          }
         }
       },
 

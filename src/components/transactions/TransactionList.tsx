@@ -28,9 +28,22 @@ export const TransactionList: React.FC = () => {
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  const sortedTransactions = filteredTransactions.sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    if (dateA !== dateB) {
+      return dateB - dateA;
+    }
+    // If dates are equal, compare time (assuming HH:mm format)
+    function parseTime(t?: string) {
+      if (!t || !/^\d{2}:\d{2}$/.test(t)) return 0;
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    }
+    const timeA = parseTime(a.time);
+    const timeB = parseTime(b.time);
+    return timeB - timeA;
+  });
 
   // Group transactions by date
   const groupedTransactions: { [date: string]: Transaction[] } = {};
@@ -129,7 +142,7 @@ export const TransactionList: React.FC = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
+          <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
             লেনদেনের তালিকা
           </h1>
           <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mt-2`}></div>
@@ -252,6 +265,7 @@ export const TransactionList: React.FC = () => {
       {/* Transaction Form Modal */}
       {showForm && (
         <TransactionForm 
+          key="new"
           onClose={() => setShowForm(false)}
           onSubmit={() => setShowForm(false)}
         />

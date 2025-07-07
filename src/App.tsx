@@ -50,13 +50,21 @@ function App() {
     return () => unsubscribe();
   }, [setUser]);
 
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   if (!user) {
     return <AuthForm />;
   }
 
   return (
     <Router>
-      <div className={`${darkMode ? 'dark' : ''}`}>
+      <div>
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />

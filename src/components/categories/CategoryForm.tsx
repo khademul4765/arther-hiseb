@@ -112,7 +112,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Name */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ক্যাটেগরির নাম *
             </label>
             <div className="relative">
@@ -139,7 +139,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
           {/* Type */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ধরন *
             </label>
             <select
@@ -157,7 +157,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
           {/* Color */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               রং *
             </label>
             <div className="grid grid-cols-5 gap-2">
@@ -179,7 +179,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
           {/* Icon */}
           <div>
-            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               আইকন *
             </label>
             <div className="grid grid-cols-5 gap-2">
@@ -214,7 +214,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {selectedName || 'ক্যাটেগরির নাম'}
               </span>
-              <span className={`text-xs px-2 py-1 rounded-full ${
+              <span className={`text-sm px-2 py-1 rounded-full ${
                 selectedType === 'income' 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-red-100 text-red-800'

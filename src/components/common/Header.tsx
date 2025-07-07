@@ -110,12 +110,8 @@ export const Header: React.FC = () => {
                 <span className="text-white font-bold text-xl">৳</span>
               </motion.div>
               <div>
-                <h1 className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>
-                  অর্থের হিসেব
-                </h1>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-                  by MK Bashar
-                </p>
+                <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>অর্থের হিসেব</h1>
+                <p className={`text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>by MK Bashar</p>
               </div>
             </div>
           </div>

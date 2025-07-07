@@ -36,11 +36,12 @@ export const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
+        className="flex flex-col items-center justify-center md:block md:items-start md:justify-start"
       >
-        <h1 className={`text-4xl md:text-5xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 md:mb-6 tracking-wide`}>
+        <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 md:mb-6 tracking-wide text-center md:text-left`}>
           ড্যাশবোর্ড
         </h1>
-        <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mb-6`}></div>
+        <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mb-6 md:ml-0 mx-auto`}></div>
       </motion.div>
 
       <motion.div 

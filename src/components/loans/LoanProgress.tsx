@@ -24,7 +24,9 @@ export const LoanProgress: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.5 }}
       className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6`}
     >
-      <h2 className={`text-2xl md:text-3xl font-bold mb-0 ${darkMode ? 'text-white' : 'text-gray-900'}`}>ঋণ ও পাওনা</h2>
+      <h2 className={`text-lg md:text-xl font-bold mb-0 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        ঋণ ও পাওনা
+      </h2>
       <div className="flex flex-row items-stretch gap-2 h-full -mt-1">
         {/* Borrowed */}
         <div className="flex-1 flex flex-col justify-center items-center min-h-0">

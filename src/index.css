@@ -8,6 +8,22 @@
   font-family: 'Noto Serif Bengali', serif;
 }
 
+html, body {
+  font-size: 14px;
+}
+
+@media (min-width: 640px) {
+  html, body {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html, body {
+    font-size: 16px;
+  }
+}
+
 body {
   background-color: #f9fafb;
   color: #1f2937;
