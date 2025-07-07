@@ -38,9 +38,25 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleClearData = () => {
-    clearUserData();
-    setShowClearConfirm(false);
-    alert('আপনার সব ডেটা মুছে ফেলা হয়েছে');
+    const performClear = async () => {
+      try {
+        await clearUserData();
+        setShowClearConfirm(false);
+        
+        // Show success message
+        alert('আপনার সব ডেটা স্থায়ীভাবে মুছে ফেলা হয়েছে');
+        
+        // Optionally reload the page to ensure clean state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (error) {
+        console.error('Error clearing data:', error);
+        alert('ডেটা মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      }
+    };
+    
+    performClear();
   };
 
   return (

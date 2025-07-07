@@ -1100,7 +1100,7 @@ export const useStore = create<StoreState>()(
       },
 
       // Utility Actions
-      initializeDefaultCategories: async (userId) => {
+      clearUserData: () => Promise<void>;
         // Check if default categories already exist
         const existingCategories = get().categories.filter(c => c.userId === userId);
         if (existingCategories.length > 0) {
@@ -1201,19 +1201,40 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      clearUserData: () => {
+      clearUserData: async () => {
         const user = get().user;
         if (!user) return;
 
-        // Only clear current user's data
+        // Clear data from Firebase
+        try {
+          // Get all user's data from Firebase and delete it
+          const collections = ['accounts', 'transactions', 'categories', 'budgets', 'goals', 'loans', 'notifications'];
+          
+          for (const collectionName of collections) {
+            const userQuery = query(collection(db, collectionName), where('userId', '==', user.id));
+            const snapshot = await getDocs(userQuery);
+            
+            // Delete all documents in batches
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+          }
+          
+          console.log('All user data cleared from Firebase');
+        } catch (error) {
+          console.error('Error clearing user data from Firebase:', error);
+          throw error; // Re-throw to handle in UI
+        }
+
+        // Clear local state immediately
         set((state) => ({
-          accounts: state.accounts.filter(a => a.userId !== user.id),
-          transactions: state.transactions.filter(t => t.userId !== user.id),
-          categories: state.categories.filter(c => c.userId !== user.id),
-          budgets: state.budgets.filter(b => b.userId !== user.id),
-          goals: state.goals.filter(g => g.userId !== user.id),
-          loans: state.loans.filter(l => l.userId !== user.id),
-          notifications: state.notifications.filter(n => n.userId !== user.id)
+          accounts: [],
+          transactions: [],
+          categories: [],
+          budgets: [],
+          goals: [],
+          loans: [],
+          notifications: [],
+          isInitialized: false
         }));
       },
     }),
