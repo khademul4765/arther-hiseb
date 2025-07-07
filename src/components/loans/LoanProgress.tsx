@@ -24,27 +24,31 @@ export const LoanProgress: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.5 }}
       className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6`}
     >
-      <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>ঋণ ও পাওনা ব্যবস্থাপনা</h2>
-      <div className="flex flex-col lg:flex-row gap-6 h-full">
+      <h2 className={`text-2xl md:text-3xl font-bold mb-0 ${darkMode ? 'text-white' : 'text-gray-900'}`}>ঋণ ও পাওনা</h2>
+      <div className="flex flex-row items-stretch gap-2 h-full -mt-1">
         {/* Borrowed */}
-        <div className="flex-1 flex flex-col justify-center items-center border-b lg:border-b-0 lg:border-r px-2 border-gray-300 dark:border-gray-700">
+        <div className="flex-1 flex flex-col justify-center items-center min-h-0">
           <div className="flex items-center mb-2">
             <ArrowDownLeft size={18} className="mr-2 text-pink-500" />
             <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>ঋণ (নিয়েছি)</span>
           </div>
-          <div className="flex flex-col gap-1 text-sm items-center">
+          <div className={`flex flex-col gap-1 text-sm items-center ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}> 
             <span>মোট: <span className="font-bold">{borrowedTotal.toLocaleString()} ৳</span></span>
             <span>বাকি: <span className="font-bold">{borrowedRemaining.toLocaleString()} ৳</span></span>
             <span className="flex items-center gap-1">সম্পূর্ণ: <CheckCircle size={14} className="text-green-500" /> {borrowedCompleted}</span>
           </div>
         </div>
+        {/* Divider */}
+        <div className="flex justify-center items-center">
+          <div className={`w-px h-16 md:h-20 self-center ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+        </div>
         {/* Lent */}
-        <div className="flex-1 flex flex-col justify-center items-center px-2">
+        <div className="flex-1 flex flex-col justify-center items-center min-h-0">
           <div className="flex items-center mb-2">
-            <ArrowUpRight size={18} className="mr-2 text-yellow-500" />
+            <ArrowUpRight size={18} className="mr-2 text-blue-500" />
             <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>পাওনা (দিয়েছি)</span>
           </div>
-          <div className="flex flex-col gap-1 text-sm items-center">
+          <div className={`flex flex-col gap-1 text-sm items-center ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}> 
             <span>মোট: <span className="font-bold">{lentTotal.toLocaleString()} ৳</span></span>
             <span>বাকি: <span className="font-bold">{lentRemaining.toLocaleString()} ৳</span></span>
             <span className="flex items-center gap-1">সম্পূর্ণ: <CheckCircle size={14} className="text-green-500" /> {lentCompleted}</span>
