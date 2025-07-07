@@ -5,6 +5,7 @@ import { RecentTransactions } from './RecentTransactions';
 import { BudgetOverview } from './BudgetOverview';
 import { GoalsProgress } from './GoalsProgress';
 import { ExpenseChart } from './ExpenseChart';
+import { LoanProgress } from '../loans/LoanProgress';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Target, CreditCard, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 
@@ -21,7 +22,10 @@ export const Dashboard: React.FC = () => {
 
   const balance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
-  const activeGoals = goals.filter(g => !g.isCompleted).length;
+  const activeGoalsList = goals.filter(g => !g.isCompleted);
+  const activeGoals = activeGoalsList.length;
+  const totalTargetedSaving = activeGoalsList.reduce((sum, g) => sum + g.targetAmount, 0);
+  const totalSavedMoney = activeGoalsList.reduce((sum, g) => sum + g.currentAmount, 0);
 
   const totalLoanTaken = loans.filter(l => l.type === 'borrowed').reduce((sum, l) => sum + l.amount, 0);
   const totalMoneyLent = loans.filter(l => l.type === 'lent').reduce((sum, l) => sum + l.amount, 0);
@@ -43,7 +47,7 @@ export const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
       >
         <StatsCard
           title="মোট বর্তমান ব্যালেন্স"
@@ -68,7 +72,15 @@ export const Dashboard: React.FC = () => {
         />
         <StatsCard
           title="সক্রিয় লক্ষ্য"
-          value={activeGoals.toString()}
+          value={
+            <div>
+              <div>{activeGoals.toString()}</div>
+              <div className="text-xs mt-1 text-gray-500 dark:text-gray-300">
+                টার্গেট: {totalTargetedSaving.toLocaleString()} ৳<br/>
+                সেভড: {totalSavedMoney.toLocaleString()} ৳
+              </div>
+            </div>
+          }
           icon={<Target size={20} className="md:w-6 md:h-6" />}
           color="bg-purple-600"
           trend=""
@@ -104,10 +116,11 @@ export const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6"
       >
         <BudgetOverview />
         <GoalsProgress />
+        <LoanProgress />
       </motion.div>
     </div>
   );

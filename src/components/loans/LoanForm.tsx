@@ -26,7 +26,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
   onSubmit,
   loan
 }) => {
-  const { addLoan, updateLoan, darkMode } = useStore();
+  const { addLoan, updateLoan, darkMode, user } = useStore();
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     defaultValues: loan ? {
       type: loan.type,
@@ -45,11 +45,23 @@ export const LoanForm: React.FC<LoanFormProps> = ({
   });
 
   const onFormSubmit = (data: FormData) => {
-    const loanData = {
+    console.log('Loan form submit data:', data, 'user:', user);
+    if (!user) {
+      alert('আপনি লগইন করেননি। দয়া করে লগইন করুন।');
+      return;
+    }
+    const loanData: any = {
       ...data,
       date: new Date(data.date),
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined
+      note: data.note,
     };
+    if (data.dueDate) {
+      loanData.dueDate = new Date(data.dueDate);
+    }
+    // Remove dueDate if not present
+    if (!data.dueDate) {
+      delete loanData.dueDate;
+    }
 
     if (loan) {
       updateLoan(loan.id, loanData);

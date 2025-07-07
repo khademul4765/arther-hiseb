@@ -69,7 +69,7 @@ export const ExpenseChart: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.1 }}
       className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6`}
     >
-      <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+      <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
         ক্যাটেগরি অনুযায়ী খরচ
       </h2>
       <div className="h-64">
