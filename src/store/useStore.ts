@@ -108,6 +108,7 @@ export const useStore = create<StoreState>()(
       darkMode: false,
       isInitialized: false,
 
+
       // Auth Actions
       setUser: async (user) => {
         set({ user });
@@ -1100,9 +1101,18 @@ export const useStore = create<StoreState>()(
       },
 
       // Utility Actions
-      clearUserData: () => Promise<void>;
+      initializeDefaultCategories: async (userId) => {
         // Check if default categories already exist
         const existingCategories = get().categories.filter(c => c.userId === userId);
+        if (existingCategories.length > 0) {
+          console.log('Categories already exist, skipping initialization');
+          return;
+        }
+
+        const defaultCategories = [
+  initializeDefaultCategories: (userId: string) => Promise<void>;
+  initializeDefaultAccounts: (userId: string) => Promise<void>;
+  cleanupDuplicateCategories: (userId: string) => Promise<void>;
         if (existingCategories.length > 0) {
           console.log('Categories already exist, skipping initialization');
           return;
@@ -1236,6 +1246,107 @@ export const useStore = create<StoreState>()(
           notifications: [],
           isInitialized: false
         }));
+      },
+
+      initializeDefaultCategories: async (userId) => {
+        // Check if default categories already exist
+        const existingCategories = get().categories.filter(c => c.userId === userId);
+        if (existingCategories.length > 0) {
+          console.log('Categories already exist, skipping initialization');
+          return;
+        }
+
+        const defaultCategories = [
+          { name: 'খাবার', color: '#FF6B6B', icon: '🍽️', type: 'expense', isDefault: true },
+          { name: 'পরিবহন', color: '#4ECDC4', icon: '🚗', type: 'expense', isDefault: true },
+          { name: 'বিনোদন', color: '#45B7D1', icon: '🎬', type: 'expense', isDefault: true },
+          { name: 'স্বাস্থ্য', color: '#96CEB4', icon: '🏥', type: 'expense', isDefault: true },
+          { name: 'শিক্ষা', color: '#FFEAA7', icon: '📚', type: 'expense', isDefault: true },
+          { name: 'বেতন', color: '#DDA0DD', icon: '💰', type: 'income', isDefault: true },
+          { name: 'ব্যবসা', color: '#98D8E8', icon: '🏢', type: 'income', isDefault: true },
+          { name: 'বিনিয়োগ', color: '#F7DC6F', icon: '📈', type: 'income', isDefault: true },
+        ];
+
+        for (const category of defaultCategories) {
+          await addDoc(collection(db, 'categories'), {
+            ...category,
+            userId,
+            createdAt: serverTimestamp(),
+          });
+        }
+      },
+
+      initializeDefaultAccounts: async (userId) => {
+        // Fetch current accounts for the user
+        const currentAccounts = get().accounts.filter(a => a.userId === userId);
+        const defaultAccounts = [
+          {
+            name: 'নগদ',
+            type: 'cash',
+            description: 'হাতে থাকা নগদ টাকা',
+            balance: 0,
+          },
+          {
+            name: 'ব্যাংক অ্যাকাউন্ট',
+            type: 'bank',
+            description: 'প্রধান ব্যাংক অ্যাকাউন্ট',
+            balance: 0,
+          }
+        ];
+
+        for (const account of defaultAccounts) {
+          const exists = currentAccounts.some(
+            a => a.name === account.name && a.type === account.type
+          );
+          if (!exists) {
+            await addDoc(collection(db, 'accounts'), {
+              ...account,
+              userId,
+              createdAt: serverTimestamp(),
+            });
+          }
+        }
+      },
+
+      cleanupDuplicateCategories: async (userId) => {
+        const userCategories = get().categories.filter(c => c.userId === userId);
+        const duplicateGroups = new Map<string, Category[]>();
+        
+        // Group categories by name and type
+        userCategories.forEach(category => {
+          const key = `${category.name.toLowerCase()}-${category.type}`;
+          if (!duplicateGroups.has(key)) {
+            duplicateGroups.set(key, []);
+          }
+          duplicateGroups.get(key)!.push(category);
+        });
+        
+        // Remove duplicates, keeping the default one or the oldest one
+        for (const [key, categories] of duplicateGroups) {
+          if (categories.length > 1) {
+            console.log(`Found ${categories.length} duplicates for ${key}, cleaning up...`);
+            
+            // Sort by priority: default first, then by creation date
+            categories.sort((a, b) => {
+              if (a.isDefault && !b.isDefault) return -1;
+              if (!a.isDefault && b.isDefault) return 1;
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            });
+            
+            // Keep the first one, delete the rest
+            const toKeep = categories[0];
+            const toDelete = categories.slice(1);
+            
+            for (const category of toDelete) {
+              try {
+                await deleteDoc(doc(db, 'categories', category.id));
+                console.log(`Deleted duplicate category: ${category.name} (${category.id})`);
+              } catch (error) {
+                console.error(`Error deleting duplicate category ${category.id}:`, error);
+              }
+            }
+          }
+        }
       },
     }),
     {
