@@ -6,10 +6,10 @@ import { BudgetOverview } from './BudgetOverview';
 import { GoalsProgress } from './GoalsProgress';
 import { ExpenseChart } from './ExpenseChart';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Target, CreditCard } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, CreditCard, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { transactions, budgets, goals, accounts, darkMode } = useStore();
+  const { transactions, budgets, goals, accounts, loans, darkMode } = useStore();
 
   const totalIncome = transactions
     .filter(t => t.type === 'income')
@@ -22,6 +22,9 @@ export const Dashboard: React.FC = () => {
   const balance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
   const activeGoals = goals.filter(g => !g.isCompleted).length;
+
+  const totalLoanTaken = loans.filter(l => l.type === 'borrowed').reduce((sum, l) => sum + l.amount, 0);
+  const totalMoneyLent = loans.filter(l => l.type === 'lent').reduce((sum, l) => sum + l.amount, 0);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -69,6 +72,20 @@ export const Dashboard: React.FC = () => {
           icon={<Target size={20} className="md:w-6 md:h-6" />}
           color="bg-purple-600"
           trend=""
+        />
+        <StatsCard
+          title="মোট ঋণ"
+          value={`${totalLoanTaken.toLocaleString()} ৳`}
+          icon={<ArrowDownCircle size={20} className="md:w-6 md:h-6" />}
+          color="bg-pink-600"
+          trend={totalLoanTaken > 0 ? '-' : ''}
+        />
+        <StatsCard
+          title="মোট পাওনা"
+          value={`${totalMoneyLent.toLocaleString()} ৳`}
+          icon={<ArrowUpCircle size={20} className="md:w-6 md:h-6" />}
+          color="bg-yellow-600"
+          trend={totalMoneyLent > 0 ? '+' : ''}
         />
       </motion.div>
 
