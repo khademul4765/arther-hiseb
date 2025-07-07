@@ -143,19 +143,19 @@ export const LoanForm: React.FC<LoanFormProps> = ({
           {/* Person Name */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              ব্যক্তির নাম *
+              ব্যক্তি/ প্রতিষ্ঠানের নাম *
             </label>
             <div className="relative">
               <Users size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <input
                 type="text"
-                {...register('personName', { required: 'ব্যক্তির নাম আবশ্যক' })}
+                {...register('personName', { required: 'ব্যক্তি/ প্রতিষ্ঠানের নাম আবশ্যক' })}
                 className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="ব্যক্তির নাম লিখুন"
+                placeholder="ব্যক্তি/ প্রতিষ্ঠানের নাম লিখুন"
               />
             </div>
             {errors.personName && (

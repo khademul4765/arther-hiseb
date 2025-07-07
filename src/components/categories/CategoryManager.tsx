@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { CategoryForm } from './CategoryForm';
 import { motion } from 'framer-motion';
@@ -9,6 +9,9 @@ export const CategoryManager: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const undoTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleEdit = (category: any) => {
     setEditingCategory(category);
@@ -16,8 +19,28 @@ export const CategoryManager: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteCategory(id);
+    setPendingDelete(id);
+    setToast({
+      message: 'ক্যাটেগরি মুছে ফেলা হয়েছে',
+      action: handleUndo
+    });
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    undoTimeout.current = setTimeout(() => {
+      finalizeDelete(id);
+      setToast(null);
+      setPendingDelete(null);
+    }, 5000);
     setShowDeleteConfirm(null);
+  };
+
+  const finalizeDelete = (id: string) => {
+    deleteCategory(id);
+  };
+
+  const handleUndo = () => {
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    setToast(null);
+    setPendingDelete(null);
   };
 
   const handleCloseForm = () => {
@@ -259,6 +282,21 @@ export const CategoryManager: React.FC = () => {
             </div>
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-fade-in">
+          <span>{toast.message}</span>
+          {toast.action && (
+            <button
+              onClick={toast.action}
+              className="ml-2 px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+            >
+              Undo
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -4,6 +4,17 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
+function formatTime12h(time: string) {
+  if (!time) return '';
+  const [h, m] = time.split(':');
+  let hour = parseInt(h, 10);
+  const minute = m;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minute} ${ampm}`;
+}
+
 export const RecentTransactions: React.FC = () => {
   const { transactions, categories, darkMode } = useStore();
 
@@ -58,7 +69,7 @@ export const RecentTransactions: React.FC = () => {
                       {transaction.category}
                     </p>
                     <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {format(parsedDate, 'dd MMM yyyy')} {/* Use parsedDate */}
+                      {format(parsedDate, 'dd MMM yyyy')} {formatTime12h(transaction.time)}
                     </p>
                   </div>
                 </div>

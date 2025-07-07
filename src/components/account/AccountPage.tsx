@@ -254,7 +254,7 @@ export const AccountPage: React.FC = () => {
           {/* Net Worth */}
           <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
             <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-              নেট সম্পদ
+              মোট বর্তমান ব্যালেন্স
             </h4>
             <p className={`text-3xl font-bold ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
               {totalBalance.toLocaleString()} ৳

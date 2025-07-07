@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
+import { TransferForm } from '../accounts/TransferForm';
 import { motion } from 'framer-motion';
 import { Edit2, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { format } from 'date-fns';
@@ -11,9 +12,11 @@ interface TransactionItemProps {
 }
 
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
-  const { deleteTransaction, categories, darkMode } = useStore();
+  const { deleteTransaction, categories, darkMode, accounts } = useStore();
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showEditTransferForm, setShowEditTransferForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const getCategoryIcon = (categoryName: string) => {
     const category = categories.find(c => c.name === categoryName);
@@ -25,6 +28,20 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
     setShowDeleteConfirm(false);
   };
 
+  function formatTime12h(time: string) {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minute} ${ampm}`;
+  }
+
+  // Helper to detect transfer
+  const isTransfer = transaction.type === 'transfer' || (transaction.accountId && transaction.toAccountId);
+
   return (
     <>
       <motion.div
@@ -32,7 +49,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         whileHover={{ scale: 1.01, y: -2 }}
-        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm`}
+        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm cursor-pointer`}
+        onClick={() => setShowDetails(true)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -44,43 +62,26 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             </motion.div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
-                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {transaction.category}
-                </h3>
-                <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                  {transaction.type === 'income' ? (
-                    <ArrowUpRight size={16} />
-                  ) : (
-                    <ArrowDownRight size={16} />
-                  )}
-                </div>
+                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{transaction.category}</h3>
+                <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{transaction.type === 'income' ? (<ArrowUpRight size={16} />) : (<ArrowDownRight size={16} />)}</div>
               </div>
-              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {format(new Date(transaction.date), 'dd MMM yyyy')} • {transaction.time}
-              </p>
-              {transaction.note && (
-                <p className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>
-                  {transaction.note}
-                </p>
-              )}
-              {transaction.person && (
-                <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
-                  ব্যক্তি: {transaction.person}
-                </p>
-              )}
+              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy')}  {formatTime12h(transaction.time)}</p>
+              {/* Extra info row for report view */}
+              <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}> 
+                {transaction.accountId && (
+                  <span>অ্যাকাউন্ট: {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</span>
+                )}
+                {transaction.toAccountId && (
+                  <span> → {accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</span>
+                )}
+              </div>
+              {/* End extra info row */}
+              {transaction.note && (<p className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>{transaction.note}</p>)}
+              {transaction.person && (<p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>ব্যক্তি / প্রতিষ্ঠান: {transaction.person}</p>)}
               {transaction.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {transaction.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`px-3 py-1 text-sm rounded-full ${
-                        darkMode 
-                          ? 'bg-gray-700 text-gray-300' 
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {tag}
-                    </span>
+                  {transaction.tags.filter(tag => tag !== 'ট্রান্সফার').map((tag, index) => (
+                    <span key={index} className={`px-3 py-1 text-sm rounded-full ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>{tag}</span>
                   ))}
                 </div>
               )}
@@ -100,7 +101,13 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <motion.button
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setShowEditForm(true)}
+                onClick={() => {
+                  if (isTransfer) {
+                    setShowEditTransferForm(true);
+                  } else {
+                    setShowEditForm(true);
+                  }
+                }}
                 className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} shadow-md transition-all duration-200`}
               >
                 <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
@@ -119,11 +126,27 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       </motion.div>
 
       {/* Edit Form */}
-      {showEditForm && (
+      {showEditForm && !isTransfer && (
         <TransactionForm
           transaction={transaction}
           onClose={() => setShowEditForm(false)}
           onSubmit={() => setShowEditForm(false)}
+        />
+      )}
+      {/* Edit Transfer Form */}
+      {showEditTransferForm && isTransfer && (
+        <TransferForm
+          // Pre-fill transfer data
+          initialData={{
+            fromAccountId: transaction.accountId,
+            toAccountId: transaction.toAccountId,
+            amount: transaction.amount,
+            note: transaction.note,
+            id: transaction.id
+          }}
+          onClose={() => setShowEditTransferForm(false)}
+          onSubmit={() => setShowEditTransferForm(false)}
+          isEdit={true}
         />
       )}
 
@@ -162,6 +185,43 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               >
                 মুছে ফেলুন
               </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {showDetails && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>লেনদেনের বিস্তারিত</h2>
+              <button
+                onClick={() => setShowDetails(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div><span className="font-semibold">ক্যাটেগরি:</span> {transaction.category}</div>
+              <div><span className="font-semibold">পরিমাণ:</span> {transaction.amount.toLocaleString()} ৳</div>
+              <div><span className="font-semibold">ধরন:</span> {transaction.type === 'income' ? 'আয়' : 'খরচ'}</div>
+              <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy')}</div>
+              <div><span className="font-semibold">সময়:</span> {formatTime12h(transaction.time)}</div>
+              {transaction.accountId && <div><span className="font-semibold">অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</div>}
+              {transaction.toAccountId && <div><span className="font-semibold">গন্তব্য অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</div>}
+              {transaction.person && <div><span className="font-semibold">ব্যক্তি / প্রতিষ্ঠান:</span> {transaction.person}</div>}
+              {transaction.note && <div><span className="font-semibold">নোট:</span> {transaction.note}</div>}
+              {transaction.tags.length > 0 && <div><span className="font-semibold">ট্যাগ:</span> {transaction.tags.join(', ')}</div>}
             </div>
           </motion.div>
         </motion.div>

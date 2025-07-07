@@ -69,8 +69,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     onSubmit();
   };
 
-  const expenseCategories = categories.filter(c => c.type === 'expense');
-  const incomeCategories = categories.filter(c => c.type === 'income');
+  const expenseCategories = Array.from(new Map(categories.filter(c => c.type === 'expense').map(c => [c.name, c])).values());
+  const incomeCategories = Array.from(new Map(categories.filter(c => c.type === 'income').map(c => [c.name, c])).values());
   const selectedAccount = accounts.find(a => a.id === selectedAccountId);
 
   const getAccountIcon = (type: string) => {
@@ -285,7 +285,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Person */}
           <div>
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              ব্যক্তি
+              ব্যক্তি / প্রতিষ্ঠান
             </label>
             <div className="relative">
               <User size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
@@ -297,7 +297,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="ব্যক্তির নাম"
+                placeholder="ব্যক্তি/ প্রতিষ্ঠানের নাম"
               />
             </div>
           </div>

@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
 import { TransactionItem } from './TransactionItem';
 import { motion } from 'framer-motion';
 import { Plus, Search, Filter } from 'lucide-react';
+import { Transaction } from '../../types';
 
 export const TransactionList: React.FC = () => {
-  const { transactions, categories, darkMode } = useStore();
+  const { transactions, categories, darkMode, deleteTransaction } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
+  const undoTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -24,6 +29,94 @@ export const TransactionList: React.FC = () => {
   const sortedTransactions = filteredTransactions.sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  // Group transactions by date
+  const groupedTransactions: { [date: string]: Transaction[] } = {};
+  sortedTransactions.forEach((transaction) => {
+    const dateKey = new Date(transaction.date).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!groupedTransactions[dateKey]) groupedTransactions[dateKey] = [];
+    groupedTransactions[dateKey].push(transaction);
+  });
+
+  const handleSelect = (id: string) => {
+    setSelectedTransactions((prev) => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+  };
+  const handleSelectAll = (ids: string[]) => {
+    setSelectedTransactions(ids);
+  };
+  const handleDeselectAll = () => {
+    setSelectedTransactions([]);
+  };
+  function formatTime12h(time: string) {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minute} ${ampm}`;
+  }
+  const handleExport = () => {
+    // Export selected transactions as CSV
+    const selected = sortedTransactions.filter(t => selectedTransactions.includes(t.id));
+    if (selected.length === 0) {
+      setToast({ message: 'কোনো লেনদেন নির্বাচন করা হয়নি!' });
+      return;
+    }
+    const csv = [
+      ['ID', 'Amount', 'Type', 'Category', 'Account', 'Date', 'Time', 'Person', 'Note', 'Tags'].join(','),
+      ...selected.map(t => [
+        t.id,
+        t.amount,
+        t.type,
+        t.category,
+        t.accountId,
+        t.date,
+        formatTime12h(t.time),
+        t.person,
+        t.note,
+        t.tags.join(';')
+      ].map(x => `"${x ?? ''}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const handleDelete = () => {
+    if (selectedTransactions.length === 0) return;
+    if (!window.confirm('নির্বাচিত লেনদেনগুলো মুছে ফেলতে চান?')) return;
+    setPendingDelete(selectedTransactions);
+    setToast({
+      message: `লেনদেন মুছে ফেলা হয়েছে (${selectedTransactions.length})`,
+      action: handleUndo
+    });
+    // Start undo timer
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    undoTimeout.current = setTimeout(() => {
+      finalizeDelete(selectedTransactions);
+      setToast(null);
+      setPendingDelete(null);
+    }, 5000);
+    setSelectedTransactions([]);
+  };
+
+  const finalizeDelete = (ids: string[]) => {
+    ids.forEach(id => deleteTransaction(id));
+  };
+
+  const handleUndo = () => {
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    setToast(null);
+    setPendingDelete(null);
+  };
+  const totalSelectedAmount = sortedTransactions.filter(t => selectedTransactions.includes(t.id)).reduce((sum, t) => sum + t.amount * (t.type === 'expense' ? -1 : 1), 0);
 
   return (
     <div className="space-y-6">
@@ -106,29 +199,59 @@ export const TransactionList: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Transaction List */}
+      {/* Selection summary bar */}
+      {selectedTransactions.length > 0 && (
+        <div className={`flex flex-wrap items-center justify-between mb-4 p-4 rounded-xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border shadow`}> 
+          <div className="flex items-center gap-4">
+            <span className="font-bold">নির্বাচিত: {selectedTransactions.length}</span>
+            <span className="font-bold">মোট: {totalSelectedAmount.toLocaleString()} ৳</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleExport} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Export CSV</button>
+            <button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Delete</button>
+            <button onClick={handleDeselectAll} className="px-4 py-2 rounded-lg bg-gray-400 text-white hover:bg-gray-500">Deselect</button>
+          </div>
+        </div>
+      )}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="space-y-4"
+        className="space-y-8"
       >
-        {sortedTransactions.length === 0 ? (
+        {Object.keys(groupedTransactions).length === 0 ? (
           <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-8 text-center shadow-lg`}>
-            <p className={`text-xl ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              কোন লেনদেন পাওয়া যায়নি
-            </p>
+            <p className={`text-xl ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোন লেনদেন পাওয়া যায়নি</p>
           </div>
         ) : (
-          sortedTransactions.map((transaction, index) => (
-            <motion.div
-              key={transaction.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-            >
-              <TransactionItem transaction={transaction} />
-            </motion.div>
+          Object.entries(groupedTransactions).map(([date, txns]) => (
+            <div key={date}>
+              <div className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{date}</div>
+              <div className="space-y-2">
+                <div className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={txns.every(t => selectedTransactions.includes(t.id))}
+                    onChange={e => e.target.checked ? handleSelectAll(txns.map(t => t.id)) : handleDeselectAll()}
+                    className="mr-2"
+                  />
+                  <span className="text-sm">সব নির্বাচন করুন</span>
+                </div>
+                {txns.map((transaction, index) => (
+                  <div key={transaction.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.includes(transaction.id)}
+                      onChange={() => handleSelect(transaction.id)}
+                      className="mr-3"
+                    />
+                    <div className="flex-1">
+                      <TransactionItem transaction={transaction} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ))
         )}
       </motion.div>
@@ -139,6 +262,20 @@ export const TransactionList: React.FC = () => {
           onClose={() => setShowForm(false)}
           onSubmit={() => setShowForm(false)}
         />
+      )}
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-fade-in">
+          <span>{toast.message}</span>
+          {toast.action && (
+            <button
+              onClick={toast.action}
+              className="ml-2 px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+            >
+              Undo
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

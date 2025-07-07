@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, CreditCard } from 'lucide-react';
+import { TransactionItem } from '../transactions/TransactionItem';
 
 export const AccountManager: React.FC = () => {
-  const { accounts, deleteAccount, darkMode } = useStore();
+  const { accounts, deleteAccount, darkMode, transactions } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [showAccountTransactions, setShowAccountTransactions] = useState(false);
+  const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const undoTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleEdit = (account: any) => {
     setEditingAccount(account);
@@ -18,8 +24,28 @@ export const AccountManager: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteAccount(id);
+    setPendingDelete(id);
+    setToast({
+      message: 'অ্যাকাউন্ট মুছে ফেলা হয়েছে',
+      action: handleUndo
+    });
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    undoTimeout.current = setTimeout(() => {
+      finalizeDelete(id);
+      setToast(null);
+      setPendingDelete(null);
+    }, 5000);
     setShowDeleteConfirm(null);
+  };
+
+  const finalizeDelete = (id: string) => {
+    deleteAccount(id);
+  };
+
+  const handleUndo = () => {
+    if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    setToast(null);
+    setPendingDelete(null);
   };
 
   const handleCloseForm = () => {
@@ -102,7 +128,8 @@ export const AccountManager: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-4 md:p-6 hover:shadow-md transition-shadow`}
+            className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-4 md:p-6 hover:shadow-md transition-shadow cursor-pointer`}
+            onClick={() => { setSelectedAccount(account); setShowAccountTransactions(true); }}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
@@ -223,6 +250,58 @@ export const AccountManager: React.FC = () => {
             </div>
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Account Transactions Modal */}
+      {showAccountTransactions && selectedAccount && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAccount.name} - স্টেটমেন্ট</h2>
+              <button
+                onClick={() => setShowAccountTransactions(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              {transactions.filter(t => t.accountId === selectedAccount.id || t.toAccountId === selectedAccount.id).length === 0 ? (
+                <p className={`text-center py-8 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোনো লেনদেন নেই</p>
+              ) : (
+                transactions
+                  .filter(t => t.accountId === selectedAccount.id || t.toAccountId === selectedAccount.id)
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((transaction) => (
+                    <TransactionItem key={transaction.id} transaction={transaction} />
+                  ))
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-fade-in">
+          <span>{toast.message}</span>
+          {toast.action && (
+            <button
+              onClick={toast.action}
+              className="ml-2 px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+            >
+              Undo
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

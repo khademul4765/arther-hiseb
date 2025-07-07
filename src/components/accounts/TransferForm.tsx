@@ -7,6 +7,14 @@ import { X, ArrowRightLeft, FileText, Wallet, Building2, CreditCard } from 'luci
 interface TransferFormProps {
   onClose: () => void;
   onSubmit: () => void;
+  initialData?: {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    note: string;
+    id?: string;
+  };
+  isEdit?: boolean;
 }
 
 interface FormData {
@@ -16,9 +24,25 @@ interface FormData {
   note: string;
 }
 
-export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit }) => {
-  const { accounts, transferMoney, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>();
+export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit, initialData, isEdit }) => {
+  const { accounts, transferMoney, darkMode, updateTransaction } = useStore();
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
+    defaultValues: initialData ? {
+      fromAccountId: initialData.fromAccountId,
+      toAccountId: initialData.toAccountId,
+      amount: initialData.amount,
+      note: initialData.note
+    } : {}
+  });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setValue('fromAccountId', initialData.fromAccountId);
+      setValue('toAccountId', initialData.toAccountId);
+      setValue('amount', initialData.amount);
+      setValue('note', initialData.note);
+    }
+  }, [initialData, setValue]);
 
   const fromAccountId = watch('fromAccountId');
   const toAccountId = watch('toAccountId');
@@ -32,6 +56,22 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit })
     
     if (fromAccount && data.amount > fromAccount.balance) {
       alert('অপর্যাপ্ত ব্যালেন্স।');
+      return;
+    }
+    
+    if (isEdit && initialData?.id) {
+      // Update both related transactions (expense and income)
+      // For simplicity, update the main transaction (expense from fromAccountId)
+      updateTransaction(initialData.id, {
+        accountId: data.fromAccountId,
+        toAccountId: data.toAccountId,
+        amount: data.amount,
+        note: data.note,
+        type: 'transfer',
+        category: 'Transfer'
+      });
+      // Optionally, update the paired income transaction if you store its id
+      onSubmit();
       return;
     }
     

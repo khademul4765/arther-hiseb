@@ -320,17 +320,33 @@ export const useStore = create<StoreState>()(
           balance: Number(toAccount.balance) + transferAmount
         });
         
-        // Create transfer transaction
+        // Create two transactions: one expense, one income
+        const now = new Date();
+        const time = now.toTimeString().slice(0, 5);
         await addDoc(collection(db, 'transactions'), {
           userId: user.id,
           amount: transferAmount,
-          type: 'transfer',
+          type: 'expense',
           category: 'ট্রান্সফার',
           accountId: fromAccountId,
           toAccountId: toAccountId,
-          date: new Date(),
-          time: new Date().toTimeString().slice(0, 5),
-          note: note || `${fromAccount.name} থেকে ${toAccount.name} এ ট্রান্সফার`,
+          date: now,
+          time,
+          note: note || '',
+          tags: ['ট্রান্সফার'],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        await addDoc(collection(db, 'transactions'), {
+          userId: user.id,
+          amount: transferAmount,
+          type: 'income',
+          category: 'ট্রান্সফার',
+          accountId: toAccountId,
+          toAccountId: fromAccountId,
+          date: now,
+          time,
+          note: note || '',
           tags: ['ট্রান্সফার'],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -370,12 +386,181 @@ export const useStore = create<StoreState>()(
             const newBalance = transaction.type === 'income' 
               ? currentBalance + transactionAmount 
               : currentBalance - transactionAmount;
-            
             await updateDoc(doc(db, 'accounts', transaction.accountId), {
               balance: newBalance
             });
+            // AI notification: low balance
+            if (newBalance < 100) {
+              get().addNotification({
+                title: 'কম ব্যালেন্স',
+                message: `${account.name} অ্যাকাউন্টে ব্যালেন্স মাত্র ${newBalance.toLocaleString()} ৳!`,
+                type: 'insight',
+                priority: 'medium',
+                isRead: false
+              });
+            }
           }
         }
+        // AI notification: large single expense
+        if (transaction.type === 'expense' && transactionAmount >= 10000) {
+          get().addNotification({
+            title: 'বড় খরচ',
+            message: `একক লেনদেনে ${transactionAmount.toLocaleString()} ৳ খরচ হয়েছে।`,
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+        }
+        // AI notification: budget overspending
+        const { budgets, transactions, goals, loans, categories } = get();
+        budgets.forEach(budget => {
+          if (!budget.categories || budget.categories.length === 0) return;
+          // Calculate spent for this budget
+          const budgetTransactions = [...transactions, { ...transaction, amount: transactionAmount }];
+          let totalSpent = 0;
+          budget.categories.forEach(categoryName => {
+            const categorySpent = budgetTransactions.filter(t =>
+              t.type === 'expense' &&
+              t.category === categoryName &&
+              new Date(t.date) >= new Date(budget.startDate) &&
+              new Date(t.date) <= new Date(budget.endDate)
+            ).reduce((sum, t) => sum + Number(t.amount), 0);
+            totalSpent += categorySpent;
+          });
+          const percent = (totalSpent / budget.amount) * 100;
+          if (percent >= 100) {
+            get().addNotification({
+              title: 'বাজেট অতিক্রম',
+              message: `"${budget.name}" বাজেটের সীমা অতিক্রম হয়েছে!`,
+              type: 'budget',
+              priority: 'high',
+              isRead: false
+            });
+          } else if (percent >= 80) {
+            get().addNotification({
+              title: 'বাজেটের কাছাকাছি',
+              message: `"${budget.name}" বাজেটের ৮০% এর বেশি খরচ হয়েছে।`,
+              type: 'budget',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        });
+        // AI notification: goal progress
+        goals.forEach(goal => {
+          const goalTransactions = [...transactions, { ...transaction, amount: transactionAmount }];
+          const totalAdded = goalTransactions.filter(t => t.type === 'income' && t.category === goal.name).reduce((sum, t) => sum + Number(t.amount), 0);
+          const percent = (totalAdded / goal.targetAmount) * 100;
+          const now = new Date();
+          const daysLeft = Math.ceil((new Date(goal.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (!goal.isCompleted && percent >= 100) {
+            get().addNotification({
+              title: 'লক্ষ্য অর্জিত!',
+              message: `অভিনন্দন! "${goal.name}" লক্ষ্য সম্পূর্ণ হয়েছে।`,
+              type: 'goal',
+              priority: 'high',
+              isRead: false
+            });
+          } else if (!goal.isCompleted && percent >= 80) {
+            get().addNotification({
+              title: 'লক্ষ্যের কাছাকাছি!',
+              message: `"${goal.name}" লক্ষ্য ৮০% সম্পূর্ণ হয়েছে।`,
+              type: 'goal',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+          if (!goal.isCompleted && daysLeft <= 7 && daysLeft > 0) {
+            get().addNotification({
+              title: 'লক্ষ্যের সময়সীমা কাছাকাছি',
+              message: `"${goal.name}" লক্ষ্য অর্জনের জন্য মাত্র ${daysLeft} দিন বাকি!`,
+              type: 'goal',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        });
+        // AI notification: loan alerts
+        loans.forEach(loan => {
+          if (loan.isCompleted) return;
+          // Upcoming installment due (3 days before dueDate)
+          if (loan.dueDate) {
+            const due = new Date(loan.dueDate);
+            const now = new Date();
+            const daysToDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysToDue === 3) {
+              get().addNotification({
+                title: 'ঋণের কিস্তি আসন্ন',
+                message: `"${loan.personName}" এর কিস্তি ${loan.amount.toLocaleString()} ৳ ${loan.dueDate} তারিখে পরিশোধ করতে হবে।`,
+                type: 'loan',
+                priority: 'medium',
+                isRead: false
+              });
+            }
+            if (daysToDue < 0 && !loan.isCompleted) {
+              get().addNotification({
+                title: 'ঋণের কিস্তি বাকি',
+                message: `"${loan.personName}" এর কিস্তি ${loan.amount.toLocaleString()} ৳ ${loan.dueDate} তারিখে পরিশোধ হয়নি!`,
+                type: 'loan',
+                priority: 'high',
+                isRead: false
+              });
+            }
+          }
+          // Loan fully paid
+          if (loan.remainingAmount === 0) {
+            get().addNotification({
+              title: 'ঋণ পরিশোধ সম্পূর্ণ',
+              message: `"${loan.personName}" এর সাথে ঋণ সম্পূর্ণ পরিশোধ হয়েছে।`,
+              type: 'loan',
+              priority: 'high',
+              isRead: false
+            });
+          }
+        });
+        // AI notification: frequent small expenses
+        const today = new Date().toISOString().split('T')[0];
+        const smallExpensesToday = [...transactions, { ...transaction, amount: transactionAmount }].filter(t => t.type === 'expense' && Number(t.amount) < 100 && t.date && t.date.toISOString && t.date.toISOString().split('T')[0] === today);
+        if (smallExpensesToday.length > 5) {
+          get().addNotification({
+            title: 'বেশি ছোট খরচ',
+            message: `আজ ${smallExpensesToday.length}টি ছোট (১০০৳ এর কম) খরচ হয়েছে।`,
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+        }
+        // AI notification: unusual income
+        if (transaction.type === 'income') {
+          const last10Incomes = transactions.filter(t => t.type === 'income').slice(-10);
+          const avgIncome = last10Incomes.length > 0 ? last10Incomes.reduce((sum, t) => sum + Number(t.amount), 0) / last10Incomes.length : 0;
+          if (transactionAmount >= 2 * avgIncome && avgIncome > 0) {
+            get().addNotification({
+              title: 'অস্বাভাবিক আয়',
+              message: `এই আয় (${transactionAmount.toLocaleString()} ৳) সাম্প্রতিক গড়ের চেয়ে অনেক বেশি!`,
+              type: 'insight',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        }
+        // AI notification: category overspending (monthly)
+        const now = new Date();
+        const month = now.getMonth();
+        const year = now.getFullYear();
+        categories.forEach(category => {
+          const monthlyExpenses = [...transactions, { ...transaction, amount: transactionAmount }].filter(t => t.type === 'expense' && t.category === category.name && new Date(t.date).getMonth() === month && new Date(t.date).getFullYear() === year);
+          const total = monthlyExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
+          if (total > 5000) {
+            get().addNotification({
+              title: 'ক্যাটেগরিতে বেশি খরচ',
+              message: `এই মাসে "${category.name}" ক্যাটেগরিতে ${total.toLocaleString()} ৳ খরচ হয়েছে।`,
+              type: 'insight',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        });
       },
 
       updateTransaction: async (id, updates) => {
@@ -428,6 +613,141 @@ export const useStore = create<StoreState>()(
           ...updates,
           amount: newAmount,
           updatedAt: serverTimestamp(),
+        });
+        // After update, run AI notification logic as in addTransaction
+        const updatedTransaction = { ...oldTransaction, ...updates, amount: newAmount, type: newType, accountId: newAccountId };
+        // AI notification: large single expense
+        if (updatedTransaction.type === 'expense' && updatedTransaction.amount >= 10000) {
+          get().addNotification({
+            title: 'বড় খরচ',
+            message: `একক লেনদেনে ${updatedTransaction.amount.toLocaleString()} ৳ খরচ হয়েছে।`,
+            type: 'insight',
+            priority: 'medium',
+            isRead: false
+          });
+        }
+        // AI notification: low balance
+        const account = get().accounts.find(a => a.id === updatedTransaction.accountId);
+        if (account && (updatedTransaction.type === 'expense' || updatedTransaction.type === 'income')) {
+          const newBalance = Number(account.balance);
+          if (newBalance < 100) {
+            get().addNotification({
+              title: 'কম ব্যালেন্স',
+              message: `${account.name} অ্যাকাউন্টে ব্যালেন্স মাত্র ${newBalance.toLocaleString()} ৳!`,
+              type: 'insight',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        }
+        // AI notification: budget overspending
+        const { budgets, transactions } = get();
+        budgets.forEach(budget => {
+          if (!budget.categories || budget.categories.length === 0) return;
+          // Calculate spent for this budget
+          const budgetTransactions = transactions.map(t => t.id === id ? { ...t, ...updates, amount: newAmount, type: newType, accountId: newAccountId } : t);
+          let totalSpent = 0;
+          budget.categories.forEach(categoryName => {
+            const categorySpent = budgetTransactions.filter(t =>
+              t.type === 'expense' &&
+              t.category === categoryName &&
+              new Date(t.date) >= new Date(budget.startDate) &&
+              new Date(t.date) <= new Date(budget.endDate)
+            ).reduce((sum, t) => sum + Number(t.amount), 0);
+            totalSpent += categorySpent;
+          });
+          const percent = (totalSpent / budget.amount) * 100;
+          if (percent >= 100) {
+            get().addNotification({
+              title: 'বাজেট অতিক্রম',
+              message: `"${budget.name}" বাজেটের সীমা অতিক্রম হয়েছে!`,
+              type: 'budget',
+              priority: 'high',
+              isRead: false
+            });
+          } else if (percent >= 80) {
+            get().addNotification({
+              title: 'বাজেটের কাছাকাছি',
+              message: `"${budget.name}" বাজেটের ৮০% এর বেশি খরচ হয়েছে।`,
+              type: 'budget',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        });
+        // AI notification: goal progress
+        const goals = get().goals;
+        goals.forEach(goal => {
+          const goalTransactions = [...transactions, { ...updatedTransaction, amount: newAmount }];
+          const totalAdded = goalTransactions.filter(t => t.type === 'income' && t.category === goal.name).reduce((sum, t) => sum + Number(t.amount), 0);
+          const percent = (totalAdded / goal.targetAmount) * 100;
+          const now = new Date();
+          const daysLeft = Math.ceil((new Date(goal.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (!goal.isCompleted && percent >= 100) {
+            get().addNotification({
+              title: 'লক্ষ্য অর্জিত!',
+              message: `অভিনন্দন! "${goal.name}" লক্ষ্য সম্পূর্ণ হয়েছে।`,
+              type: 'goal',
+              priority: 'high',
+              isRead: false
+            });
+          } else if (!goal.isCompleted && percent >= 80) {
+            get().addNotification({
+              title: 'লক্ষ্যের কাছাকাছি!',
+              message: `"${goal.name}" লক্ষ্য ৮০% সম্পূর্ণ হয়েছে।`,
+              type: 'goal',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+          if (!goal.isCompleted && daysLeft <= 7 && daysLeft > 0) {
+            get().addNotification({
+              title: 'লক্ষ্যের সময়সীমা কাছাকাছি',
+              message: `"${goal.name}" লক্ষ্য অর্জনের জন্য মাত্র ${daysLeft} দিন বাকি!`,
+              type: 'goal',
+              priority: 'medium',
+              isRead: false
+            });
+          }
+        });
+        // AI notification: loan alerts
+        const loans = get().loans;
+        loans.forEach(loan => {
+          if (loan.isCompleted) return;
+          // Upcoming installment due (3 days before dueDate)
+          if (loan.dueDate) {
+            const due = new Date(loan.dueDate);
+            const now = new Date();
+            const daysToDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysToDue === 3) {
+              get().addNotification({
+                title: 'ঋণের কিস্তি আসন্ন',
+                message: `"${loan.personName}" এর কিস্তি ${loan.amount.toLocaleString()} ৳ ${loan.dueDate} তারিখে পরিশোধ করতে হবে।`,
+                type: 'loan',
+                priority: 'medium',
+                isRead: false
+              });
+            }
+            if (daysToDue < 0 && !loan.isCompleted) {
+              get().addNotification({
+                title: 'ঋণের কিস্তি বাকি',
+                message: `"${loan.personName}" এর কিস্তি ${loan.amount.toLocaleString()} ৳ ${loan.dueDate} তারিখে পরিশোধ হয়নি!`,
+                type: 'loan',
+                priority: 'high',
+                isRead: false
+              });
+            }
+          }
+          // Loan fully paid
+          if (loan.remainingAmount === 0) {
+            get().addNotification({
+              title: 'ঋণ পরিশোধ সম্পূর্ণ',
+              message: `"${loan.personName}" এর সাথে ঋণ সম্পূর্ণ পরিশোধ হয়েছে।`,
+              type: 'loan',
+              priority: 'high',
+              isRead: false
+            });
+          }
         });
       },
 

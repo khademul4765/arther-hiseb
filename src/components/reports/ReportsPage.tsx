@@ -142,6 +142,17 @@ export const ReportsPage: React.FC = () => {
     link.click();
   };
 
+  function formatTime12h(time: string) {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minute} ${ampm}`;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
