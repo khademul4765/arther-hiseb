@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -40,6 +40,14 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     }
   });
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const period = watch('period');
   const selectedCategories = watch('categories') || [];
@@ -312,7 +320,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
                 <input
                   type="date"
                   {...register('startDate', { required: 'শুরুর তারিখ আবশ্যক' })}
-                  className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  className={`w-full px-3 py-2 rounded-lg border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
@@ -329,7 +337,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
                 <input
                   type="date"
                   {...register('endDate', { required: 'শেষের তারিখ আবশ্যক' })}
-                  className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                  className={`w-full px-3 py-2 rounded-lg border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'

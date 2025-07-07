@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
 import { Settings, Moon, Sun, Bell, Trash2, Download, Upload, User, Lock } from 'lucide-react';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 export const SettingsPage: React.FC = () => {
   const { darkMode, toggleDarkMode, clearAllNotifications, clearUserData, user } = useStore();

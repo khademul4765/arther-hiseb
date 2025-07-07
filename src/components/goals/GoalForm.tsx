@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -31,6 +31,14 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       deadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     }
   });
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const onFormSubmit = (data: FormData) => {
     const goalData = {
@@ -129,12 +137,12 @@ export const GoalForm: React.FC<GoalFormProps> = ({
               <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <input
                 type="date"
-                {...register('deadline', { required: 'শেষ তারিখ আবশ্যক' })}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                {...register('deadline', { required: 'সময়সীমা আবশ্যক' })}
+                className={`w-full px-3 py-2 rounded-lg border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
               />
             </div>
             {errors.deadline && (

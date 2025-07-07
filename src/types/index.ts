@@ -9,7 +9,7 @@ export interface Account {
   id: string;
   userId: string;
   name: string;
-  type: 'cash' | 'bank' | 'credit';
+  type: 'cash' | 'bank' | 'mfs';
   description: string;
   balance: number;
   createdAt: Date;

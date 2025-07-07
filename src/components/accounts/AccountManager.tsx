@@ -3,8 +3,12 @@ import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone } from 'lucide-react';
 import { TransactionItem } from '../transactions/TransactionItem';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { CategorySelect } from '../common/CategorySelect';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 export const AccountManager: React.FC = () => {
   const { accounts, deleteAccount, darkMode, transactions } = useStore();
@@ -17,6 +21,11 @@ export const AccountManager: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const undoTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [filterType, setFilterType] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const handleEdit = (account: any) => {
     setEditingAccount(account);
@@ -59,8 +68,8 @@ export const AccountManager: React.FC = () => {
         return <Wallet size={24} className="text-green-600" />;
       case 'bank':
         return <Building2 size={24} className="text-blue-600" />;
-      case 'credit':
-        return <CreditCard size={24} className="text-purple-600" />;
+      case 'mfs':
+        return <Smartphone size={24} className="text-red-600" />;
       default:
         return <Wallet size={24} className="text-gray-600" />;
     }
@@ -72,8 +81,8 @@ export const AccountManager: React.FC = () => {
         return 'নগদ';
       case 'bank':
         return 'ব্যাংক';
-      case 'credit':
-        return 'ক্রেডিট কার্ড';
+      case 'mfs':
+        return 'MFS';
       default:
         return 'অজানা';
     }
@@ -81,12 +90,66 @@ export const AccountManager: React.FC = () => {
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
+  // Filtered transactions for statement
+  const statementTransactions = transactions
+    .filter(t => t.accountId === selectedAccount?.id || t.toAccountId === selectedAccount?.id)
+    .filter(t => {
+      if (filterType && t.type !== filterType) return false;
+      if (filterCategory && (t.type === 'transfer' ? 'ট্রান্সফার' : t.category) !== filterCategory) return false;
+      if (filterStartDate && new Date(t.date) < new Date(filterStartDate)) return false;
+      if (filterEndDate && new Date(t.date) > new Date(filterEndDate)) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    const header = ['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'পরিমাণ', 'নোট', 'ট্যাগ'];
+    const rows = statementTransactions.map(t => [
+      new Date(t.date).toLocaleDateString('bn-BD'),
+      t.time,
+      t.type,
+      t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
+      t.amount,
+      t.note,
+      t.tags.filter(tag => tag !== 'ট্রান্সফার').join(', ')
+    ]);
+    const csvContent = [header, ...rows].map(row => row.map(field => `"${(field ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedAccount?.name || 'statement'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  // Export to PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`${selectedAccount?.name || ''} - Statement`, 10, 10);
+    const tableData = statementTransactions.map(t => [
+      new Date(t.date).toLocaleDateString('bn-BD'),
+      t.time,
+      t.type,
+      t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
+      t.amount,
+      t.note,
+      t.tags.filter(tag => tag !== 'ট্রান্সফার').join(', ')
+    ]);
+    doc.autoTable({
+      head: [['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'পরিমাণ', 'নোট', 'ট্যাগ']],
+      body: tableData,
+      startY: 20
+    });
+    doc.save(`${selectedAccount?.name || 'statement'}.pdf`);
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          অ্যাকাউন্টস
-        </h1>
+        <h1 className={`text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>অ্যাকাউন্টস</h1>
         <div className="flex space-x-2 md:space-x-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -113,11 +176,14 @@ export const AccountManager: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`${darkMode ? 'bg-gradient-to-r from-green-800 to-green-600' : 'bg-gradient-to-r from-green-600 to-green-500'} rounded-xl p-4 md:p-6 text-white`}
+        className={`flex flex-col items-center justify-center rounded-full shadow-lg mx-auto my-6 w-64 h-64 ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}
       >
-        <h2 className="text-base md:text-lg font-medium opacity-90 mb-2">মোট ব্যালেন্স</h2>
-        <p className="text-2xl md:text-4xl font-bold">{totalBalance.toLocaleString()} ৳</p>
-        <p className="text-xs md:text-sm opacity-75 mt-2">{accounts.length}টি অ্যাকাউন্ট</p>
+        <div className={`flex items-center justify-center w-20 h-20 rounded-full shadow mb-4 mt-6 ${darkMode ? 'bg-gray-800' : 'bg-green-50'}`}>
+          <Wallet size={40} className="text-green-600" />
+        </div>
+        <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>মোট ব্যালেন্স</h2>
+        <p className={`text-3xl md:text-4xl font-extrabold mb-2 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>{totalBalance.toLocaleString()} <span className="text-2xl">৳</span></p>
+        <p className={`text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{accounts.length}টি অ্যাকাউন্ট</p>
       </motion.div>
 
       {/* Accounts Grid */}
@@ -128,55 +194,46 @@ export const AccountManager: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-4 md:p-6 hover:shadow-md transition-shadow cursor-pointer`}
+            whileHover={{ scale: 1.025, y: -2, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)' }}
+            className={`border rounded-xl p-5 md:p-7 cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3`}
             onClick={() => { setSelectedAccount(account); setShowAccountTransactions(true); }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-4 mb-2">
+              <div className={`rounded-lg p-2 text-2xl flex items-center justify-center ${
+                account.type === 'cash' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700'
+              }`}>
                 {getAccountIcon(account.type)}
-                <div className="min-w-0 flex-1">
-                  <h3 className={`text-base md:text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
-                    {account.name}
-                  </h3>
-                  <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {getAccountTypeName(account.type)}
-                  </p>
-                </div>
               </div>
-              <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <h3 className={`text-base md:text-lg font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{account.name}</h3>
+                <span className={`text-xs font-medium ${account.type === 'cash' ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}`}>{getAccountTypeName(account.type)}</span>
+              </div>
+              <div className="flex items-center gap-1">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => handleEdit(account)}
-                  className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                  onClick={e => { e.stopPropagation(); handleEdit(account); }}
+                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
                 >
-                  <Edit2 size={14} className={`md:w-4 md:h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setShowDeleteConfirm(account.id)}
-                  className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                  onClick={e => { e.stopPropagation(); setShowDeleteConfirm(account.id); }}
+                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
                 >
-                  <Trash2 size={14} className="md:w-4 md:h-4 text-red-500" />
+                  <Trash2 size={16} className="text-red-500" />
                 </motion.button>
               </div>
             </div>
-
-            <div className="space-y-3">
+            <div className="flex items-end justify-between gap-2">
               <div>
-                <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  বর্তমান ব্যালেন্স
-                </p>
-                <p className={`text-xl md:text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {account.balance.toLocaleString()} ৳
-                </p>
+                <p className="text-xs opacity-70 mb-1">বর্তমান ব্যালেন্স</p>
+                <p className={`text-xl md:text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{account.balance.toLocaleString()} ৳</p>
               </div>
-
               {account.description && (
-                <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} line-clamp-2`}>
-                  {account.description}
-                </p>
+                <span className="text-xs text-gray-400 dark:text-gray-500 text-right line-clamp-2 max-w-[120px] md:max-w-[180px]">{account.description}</span>
               )}
             </div>
           </motion.div>
@@ -185,12 +242,8 @@ export const AccountManager: React.FC = () => {
         {accounts.length === 0 && (
           <div className={`col-span-full ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 md:p-8 text-center`}>
             <Wallet size={40} className={`md:w-12 md:h-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-            <p className={`text-base md:text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              কোনো অ্যাকাউন্ট তৈরি করা হয়নি
-            </p>
-            <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-2`}>
-              আপনার প্রথম অ্যাকাউন্ট তৈরি করুন
-            </p>
+            <p className={`text-base md:text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোনো অ্যাকাউন্ট তৈরি করা হয়নি</p>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-2`}>আপনার প্রথম অ্যাকাউন্ট তৈরি করুন</p>
           </div>
         )}
       </div>
@@ -273,16 +326,90 @@ export const AccountManager: React.FC = () => {
                 ✕
               </button>
             </div>
+            {/* Filters and Export */}
+            <div className="flex flex-wrap gap-2 mb-4 items-end">
+              <div>
+                <label className="block text-xs mb-1">ধরন</label>
+                <select
+                  value={filterType}
+                  onChange={e => setFilterType(e.target.value)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                >
+                  <option value="">সব ধরনের</option>
+                  <option value="income">আয়</option>
+                  <option value="expense">খরচ</option>
+                  <option value="transfer">ট্রান্সফার</option>
+                </select>
+              </div>
+              <CategorySelect
+                value={filterCategory}
+                onChange={setFilterCategory}
+                options={Array.from(new Set(transactions.map(t => t.type === 'transfer' ? 'ট্রান্সফার' : t.category))).map(cat => ({ value: cat, label: cat }))}
+                placeholder="সব"
+                disabled={false}
+              />
+              <div>
+                <label className="block text-xs mb-1">শুরুর তারিখ</label>
+                <input
+                  type="date"
+                  value={filterStartDate}
+                  onChange={e => setFilterStartDate(e.target.value)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1">শেষ তারিখ</label>
+                <input
+                  type="date"
+                  value={filterEndDate}
+                  onChange={e => setFilterEndDate(e.target.value)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                />
+              </div>
+              <div className="relative ml-auto">
+                <button
+                  onClick={() => setShowExportMenu(v => !v)}
+                  className="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-xs font-semibold"
+                >
+                  Export
+                </button>
+                {showExportMenu && (
+                  <div className={`absolute right-0 mt-2 w-32 rounded shadow-lg z-10 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border`}>
+                    <button
+                      onClick={() => { handleExportCSV(); setShowExportMenu(false); }}
+                      className="block w-full text-left px-4 py-2 hover:bg-green-100 dark:hover:bg-gray-700"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      onClick={() => { handleExportPDF(); setShowExportMenu(false); }}
+                      className="block w-full text-left px-4 py-2 hover:bg-green-100 dark:hover:bg-gray-700"
+                    >
+                      Export PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="space-y-4">
-              {transactions.filter(t => t.accountId === selectedAccount.id || t.toAccountId === selectedAccount.id).length === 0 ? (
+              {statementTransactions.length === 0 ? (
                 <p className={`text-center py-8 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোনো লেনদেন নেই</p>
               ) : (
-                transactions
-                  .filter(t => t.accountId === selectedAccount.id || t.toAccountId === selectedAccount.id)
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map((transaction) => (
-                    <TransactionItem key={transaction.id} transaction={transaction} />
-                  ))
+                statementTransactions.map((transaction) => (
+                  <TransactionItem key={transaction.id} transaction={transaction} />
+                ))
               )}
             </div>
           </motion.div>

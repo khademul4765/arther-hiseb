@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, ArrowRightLeft, FileText, Wallet, Building2, CreditCard } from 'lucide-react';
+import { X, ArrowRightLeft, FileText, Wallet, Building2, Smartphone } from 'lucide-react';
 
 interface TransferFormProps {
   onClose: () => void;
@@ -35,7 +35,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit, i
     } : {}
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialData) {
       setValue('fromAccountId', initialData.fromAccountId);
       setValue('toAccountId', initialData.toAccountId);
@@ -43,6 +43,14 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit, i
       setValue('note', initialData.note);
     }
   }, [initialData, setValue]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const fromAccountId = watch('fromAccountId');
   const toAccountId = watch('toAccountId');
@@ -85,8 +93,8 @@ export const TransferForm: React.FC<TransferFormProps> = ({ onClose, onSubmit, i
         return <Wallet size={16} className="text-green-600" />;
       case 'bank':
         return <Building2 size={16} className="text-blue-600" />;
-      case 'credit':
-        return <CreditCard size={16} className="text-purple-600" />;
+      case 'mfs':
+        return <Smartphone size={16} className="text-red-600" />;
       default:
         return <Wallet size={16} />;
     }

@@ -5,6 +5,8 @@ import { TransactionItem } from './TransactionItem';
 import { motion } from 'framer-motion';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Transaction } from '../../types';
+import { CategorySelect } from '../common/CategorySelect';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 export const TransactionList: React.FC = () => {
   const { transactions, categories, darkMode, deleteTransaction } = useStore();
@@ -19,8 +21,8 @@ export const TransactionList: React.FC = () => {
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || transaction.category === filterCategory;
+                         (transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !filterCategory || (transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category) === filterCategory;
     const matchesType = !filterType || transaction.type === filterType;
     
     return matchesSearch && matchesCategory && matchesType;
@@ -70,7 +72,7 @@ export const TransactionList: React.FC = () => {
         t.id,
         t.amount,
         t.type,
-        t.category,
+        t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
         t.accountId,
         t.date,
         formatTime12h(t.time),
@@ -165,23 +167,15 @@ export const TransactionList: React.FC = () => {
               } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
             />
           </div>
-          
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-          >
-            <option value="">সব ক্যাটেগরি</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.name}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <CategorySelect
+              value={filterCategory}
+              onChange={setFilterCategory}
+              options={Array.from(new Set(sortedTransactions.map(t => t.type === 'transfer' ? null : t.category))).filter(Boolean).map(cat => ({ value: cat, label: cat }))}
+              placeholder="সব ক্যাটেগরি"
+              disabled={false}
+            />
+          </div>
           
           <select
             value={filterType}
@@ -239,11 +233,10 @@ export const TransactionList: React.FC = () => {
                 </div>
                 {txns.map((transaction, index) => (
                   <div key={transaction.id} className="flex items-center">
-                    <input
-                      type="checkbox"
+                    <ThemedCheckbox
                       checked={selectedTransactions.includes(transaction.id)}
                       onChange={() => handleSelect(transaction.id)}
-                      className="mr-3"
+                      disabled={false}
                     />
                     <div className="flex-1">
                       <TransactionItem transaction={transaction} />

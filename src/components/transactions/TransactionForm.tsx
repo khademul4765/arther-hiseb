@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { X, Calendar, Clock, User, FileText, Tag, Wallet, Building2, CreditCard } from 'lucide-react';
 import { Transaction } from '../../types';
+import { CategorySelect } from '../common/CategorySelect';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -31,7 +32,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   defaultType = 'expense'
 }) => {
   const { addTransaction, updateTransaction, categories, accounts, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: transaction ? {
       amount: transaction.amount,
       type: transaction.type as 'income' | 'expense',
@@ -85,6 +86,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         return <Wallet size={16} />;
     }
   };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   return (
     <motion.div
@@ -216,29 +225,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ক্যাটেগরি *
             </label>
-            <select
-              {...register('category', { required: 'ক্যাটেগরি নির্বাচন করুন' })}
-              className={`w-full px-3 py-3 md:py-2 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-            >
-              <option value="">ক্যাটেগরি নির্বাচন করুন</option>
-              {selectedType === 'expense' ? (
-                expenseCategories.map(category => (
-                  <option key={category.id} value={category.name}>
-                    {category.icon} {category.name}
-                  </option>
-                ))
-              ) : (
-                incomeCategories.map(category => (
-                  <option key={category.id} value={category.name}>
-                    {category.icon} {category.name}
-                  </option>
-                ))
-              )}
-            </select>
+            {selectedType !== 'transfer' && (
+              <CategorySelect
+                value={watch('category')}
+                onChange={val => setValue('category', val, { shouldValidate: true })}
+                options={(selectedType === 'expense' ? expenseCategories : incomeCategories).map(category => ({ value: category.name, label: `${category.icon} ${category.name}` }))}
+                placeholder="ক্যাটেগরি নির্বাচন করুন"
+                disabled={false}
+              />
+            )}
             {errors.category && (
               <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
             )}

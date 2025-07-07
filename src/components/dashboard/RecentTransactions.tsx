@@ -52,6 +52,8 @@ export const RecentTransactions: React.FC = () => {
               return null; // Or render a placeholder
             }
 
+            const displayCategory = transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category;
+
             return (
               <motion.div
                 key={transaction.id}
@@ -66,7 +68,7 @@ export const RecentTransactions: React.FC = () => {
                   </div>
                   <div>
                     <p className={`font-medium text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {transaction.category}
+                      {displayCategory}
                     </p>
                     <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {format(parsedDate, 'dd MMM yyyy')} {formatTime12h(transaction.time)}

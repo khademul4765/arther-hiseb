@@ -12,7 +12,8 @@ export const ExpenseChart: React.FC = () => {
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
   
   const expensesByCategory = expenseTransactions.reduce((acc, transaction) => {
-    acc[transaction.category] = (acc[transaction.category] || 0) + transaction.amount;
+    const cat = transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category;
+    acc[cat] = (acc[cat] || 0) + transaction.amount;
     return acc;
   }, {} as Record<string, number>);
 

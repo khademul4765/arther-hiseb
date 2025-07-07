@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
 import { TransferForm } from '../accounts/TransferForm';
@@ -17,6 +17,15 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
   const [showEditTransferForm, setShowEditTransferForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    if (!showDetails) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowDetails(false);
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showDetails]);
 
   const getCategoryIcon = (categoryName: string) => {
     const category = categories.find(c => c.name === categoryName);
@@ -42,6 +51,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
   // Helper to detect transfer
   const isTransfer = transaction.type === 'transfer' || (transaction.accountId && transaction.toAccountId);
 
+  const displayCategory = transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category;
+
   return (
     <>
       <motion.div
@@ -62,7 +73,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             </motion.div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
-                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{transaction.category}</h3>
+                <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{displayCategory}</h3>
                 <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{transaction.type === 'income' ? (<ArrowUpRight size={16} />) : (<ArrowDownRight size={16} />)}</div>
               </div>
               <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy')}  {formatTime12h(transaction.time)}</p>
@@ -93,7 +104,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <p className={`text-2xl font-bold ${
                 transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
               }`}>
-                {transaction.type === 'income' ? '+' : ''}{transaction.amount.toLocaleString()} ৳
+                {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}{transaction.amount.toLocaleString()} ৳
               </p>
             </div>
             
@@ -101,7 +112,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <motion.button
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => {
+                onClick={e => {
+                  e.stopPropagation();
                   if (isTransfer) {
                     setShowEditTransferForm(true);
                   } else {
@@ -115,7 +127,10 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <motion.button
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={e => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
                 className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} shadow-md transition-all duration-200`}
               >
                 <Trash2 size={16} className="text-red-500" />
@@ -196,11 +211,13 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowDetails(false)}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+            onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>লেনদেনের বিস্তারিত</h2>
@@ -212,7 +229,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               </button>
             </div>
             <div className="space-y-2">
-              <div><span className="font-semibold">ক্যাটেগরি:</span> {transaction.category}</div>
+              <div><span className="font-semibold">ক্যাটেগরি:</span> {displayCategory}</div>
               <div><span className="font-semibold">পরিমাণ:</span> {transaction.amount.toLocaleString()} ৳</div>
               <div><span className="font-semibold">ধরন:</span> {transaction.type === 'income' ? 'আয়' : 'খরচ'}</div>
               <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy')}</div>

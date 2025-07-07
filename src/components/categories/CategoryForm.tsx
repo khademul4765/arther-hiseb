@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -46,6 +46,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       icon: iconOptions[0]
     }
   });
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const selectedColor = watch('color');
   const selectedIcon = watch('icon');

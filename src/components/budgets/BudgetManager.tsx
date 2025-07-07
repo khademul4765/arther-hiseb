@@ -5,6 +5,7 @@ import { BudgetDetails } from './BudgetDetails';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 export const BudgetManager: React.FC = () => {
   const { budgets, transactions, deleteBudget, darkMode } = useStore();

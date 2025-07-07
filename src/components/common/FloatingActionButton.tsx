@@ -4,6 +4,7 @@ import { TransactionForm } from '../transactions/TransactionForm';
 import { TransferForm } from '../accounts/TransferForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
+import { ThemedCheckbox } from './ThemedCheckbox';
 
 export const FloatingActionButton: React.FC = () => {
   const { darkMode } = useStore();

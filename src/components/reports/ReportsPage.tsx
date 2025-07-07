@@ -5,6 +5,7 @@ import { Receipt, Download, Calendar, TrendingUp, TrendingDown, PieChart } from 
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { Doughnut, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 
@@ -46,12 +47,11 @@ export const ReportsPage: React.FC = () => {
   const balance = totalIncome - totalExpense;
 
   // Category-wise expense data
-  const expensesByCategory = filteredTransactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, transaction) => {
-      acc[transaction.category] = (acc[transaction.category] || 0) + transaction.amount;
-      return acc;
-    }, {} as Record<string, number>);
+  const expensesByCategory = filteredTransactions.reduce((acc, transaction) => {
+    const cat = transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category;
+    acc[cat] = (acc[cat] || 0) + transaction.amount;
+    return acc;
+  }, {} as Record<string, number>);
 
   const pieChartData = {
     labels: Object.keys(expensesByCategory),
@@ -355,31 +355,20 @@ export const ReportsPage: React.FC = () => {
                     {format(new Date(transaction.date), 'dd MMM yyyy')}
                   </td>
                   <td className={`py-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {transaction.category}
+                    {transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category}
                   </td>
-                  <td className={`py-2`}>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      transaction.type === 'income' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {transaction.type === 'income' ? 'আয়' : 'খরচ'}
-                    </span>
+                  <td className={
+                    `${darkMode ? 'text-gray-300' : 'text-gray-700'} py-2`
+                  }>
+                    {transaction.type === 'income' ? 'আয়' : transaction.type === 'expense' ? 'খরচ' : 'ট্রান্সফার'}
                   </td>
-                  <td className={`py-2 text-right font-medium ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}৳{transaction.amount.toLocaleString()}
+                  <td className={`text-right py-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {transaction.amount.toLocaleString()} ৳
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filteredTransactions.length > 10 && (
-            <p className={`text-center py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              আরও {filteredTransactions.length - 10}টি লেনদেন আছে...
-            </p>
-          )}
         </div>
       </motion.div>
     </div>

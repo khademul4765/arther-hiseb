@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
 import { X, TrendingUp, Calendar, DollarSign, Tag, ArrowDownRight, User, FileText } from 'lucide-react';
@@ -52,6 +52,14 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
       allTransactions: budgetTransactions
     };
   }, [budget, transactions, categories]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   if (!budgetData) {
     return null;

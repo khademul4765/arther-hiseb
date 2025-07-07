@@ -4,6 +4,7 @@ import { GoalForm } from './GoalForm';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, Target, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
+import { ThemedCheckbox } from '../common/ThemedCheckbox';
 
 export const GoalManager: React.FC = () => {
   const { goals, deleteGoal, addToGoal, darkMode } = useStore();

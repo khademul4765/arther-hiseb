@@ -32,9 +32,9 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           <p className={`text-sm md:text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
             {title}
           </p>
-          <p className={`text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mt-1 truncate`}>
+          <div className={`text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mt-1 truncate`}>
             {value}
-          </p>
+          </div>
         </div>
         <motion.div 
           whileHover={{ scale: 1.1, rotate: 5 }}

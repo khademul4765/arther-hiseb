@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Wallet, Building2, CreditCard, FileText, DollarSign } from 'lucide-react';
+import { X, Wallet, Building2, Smartphone } from 'lucide-react';
 
 interface AccountFormProps {
   onClose: () => void;
@@ -12,7 +12,7 @@ interface AccountFormProps {
 
 interface FormData {
   name: string;
-  type: 'cash' | 'bank' | 'credit';
+  type: 'cash' | 'bank' | 'mfs';
   description: string;
   balance: number;
 }
@@ -31,6 +31,14 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
     }
   });
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const selectedType = watch('type');
 
   const onFormSubmit = (data: FormData) => {
@@ -48,8 +56,8 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
         return <Wallet size={20} className="text-green-600" />;
       case 'bank':
         return <Building2 size={20} className="text-blue-600" />;
-      case 'credit':
-        return <CreditCard size={20} className="text-purple-600" />;
+      case 'mfs':
+        return <Smartphone size={20} className="text-red-600" />;
       default:
         return <Wallet size={20} />;
     }
@@ -142,20 +150,18 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
               </label>
               
               <label className={`flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                selectedType === 'credit' 
-                  ? darkMode ? 'border-purple-500 bg-purple-900/20' : 'border-purple-500 bg-purple-50'
+                selectedType === 'mfs' 
+                  ? darkMode ? 'border-red-500 bg-red-900/20' : 'border-red-500 bg-red-50'
                   : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
               }`}>
                 <input 
                   type="radio" 
-                  value="credit" 
+                  value="mfs" 
                   {...register('type', { required: 'অ্যাকাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
-                <CreditCard size={24} className={selectedType === 'credit' ? 'text-purple-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
-                <span className={`text-sm mt-1 ${selectedType === 'credit' ? 'text-purple-600 font-medium' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  ক্রেডিট কার্ড
-                </span>
+                <Smartphone size={24} className={selectedType === 'mfs' ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                <span className={`text-sm mt-1 ${selectedType === 'mfs' ? 'text-red-600 font-medium' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>MFS</span>
               </label>
             </div>
             {errors.type && (
@@ -169,7 +175,6 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
               বিবরণ
             </label>
             <div className="relative">
-              <FileText size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <textarea
                 {...register('description')}
                 rows={3}

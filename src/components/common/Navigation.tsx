@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Settings, Building2, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemedCheckbox } from './ThemedCheckbox';
 
 const navigationItems = [
   { path: '/', name: 'ড্যাশবোর্ড', icon: Home },
@@ -76,7 +77,7 @@ export const Navigation: React.FC = () => {
                     }`}
                   >
                     <item.icon size={20} />
-                    <span className="font-medium text-base">{item.name}</span>
+                    <span className="font-medium text-lg">{item.name}</span>
                   </NavLink>
                 </motion.li>
               );
@@ -97,13 +98,11 @@ export const Navigation: React.FC = () => {
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
               onClick={() => {
                 setShowMobileMenu(false);
-                // Notify Header component to update its state
                 window.dispatchEvent(new CustomEvent('mobileMenuToggle', {
                   detail: { isOpen: false }
                 }));
               }}
             />
-
             {/* Sidebar */}
             <motion.nav
               initial={{ x: '-100%' }}
@@ -126,7 +125,6 @@ export const Navigation: React.FC = () => {
                           to={item.path}
                           onClick={() => {
                             setShowMobileMenu(false);
-                            // Notify Header component to update its state
                             window.dispatchEvent(new CustomEvent('mobileMenuToggle', {
                               detail: { isOpen: false }
                             }));
@@ -140,7 +138,7 @@ export const Navigation: React.FC = () => {
                           }`}
                         >
                           <item.icon size={20} />
-                          <span className="font-medium text-base">{item.name}</span>
+                          <span className="font-medium text-lg">{item.name}</span>
                         </NavLink>
                       </motion.li>
                     );
