@@ -1110,7 +1110,6 @@ export const useStore = create<StoreState>()(
         }
 
         const defaultCategories = [
-        const defaultCategories = [
           { name: 'খাবার', color: '#FF6B6B', icon: '🍽️', type: 'expense', isDefault: true },
           { name: 'পরিবহন', color: '#4ECDC4', icon: '🚗', type: 'expense', isDefault: true },
           { name: 'বিনোদন', color: '#45B7D1', icon: '🎬', type: 'expense', isDefault: true },
