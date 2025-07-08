@@ -144,9 +144,19 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange,
                       style={{ fontWeight: isSelected ? 600 : 400 }}
                       onMouseEnter={() => setHighlighted(i)}
                       onMouseDown={e => {
-                        onChange(opt.value); setOpen(false); setSelectedIdx(i); setTimeout(() => setSelectedIdx(null), 400);
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
-                      onClick={() => { if (highlighted === i) { setSelectedIdx(i); setTimeout(() => setSelectedIdx(null), 400); } }}
+                      onPointerDown={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={() => {
+                        onChange(opt.value);
+                        setOpen(false);
+                        setSelectedIdx(i);
+                        setTimeout(() => setSelectedIdx(null), 400);
+                      }}
                       role="option"
                       aria-selected={isSelected}
                       data-highlighted={isHighlighted ? true : undefined}

@@ -140,7 +140,7 @@ body {
 
 .dark .react-datepicker__day-names {
   background-color: #14532d; /* dark green for dark mode */
-  border-top: 3px solid #22d3ee; /* teal-400 for contrast in dark */
+  border-top: 3px solid #22c55e; /* green-500 */
 }
 .dark .react-datepicker__day-name {
   color: #bbf7d0; /* green-200 */
@@ -168,7 +168,7 @@ body {
 .dark .react-datepicker__day--keyboard-selected:hover,
 .dark .react-datepicker__day--selected:focus,
 .dark .react-datepicker__day--keyboard-selected:focus {
-  background-color: #22d3ee !important; /* teal-400 for contrast */
+  background-color: #22c55e !important; /* green-500 */
   color: #14532d !important;
 }
 
@@ -239,8 +239,8 @@ body {
   justify-content: center;
 }
 .dark .react-datepicker__day-names {
-  background-color: #22c55e !important; /* theme green for dark mode too */
-  border-top: 3px solid #22c55e !important;
+  background: #22c55e;
+  border-radius: 0;
 }
 .dark .react-datepicker__day-name {
   color: #fff !important;
@@ -411,4 +411,25 @@ body {
   border: 1.5px solid #bbf7d0;
   box-shadow: 0 0 0 4px #22c55e44;
   animation: popBounce 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Hide days from outside the selected month in react-datepicker */
+.react-datepicker__day--outside-month {
+  visibility: hidden;
+}
+
+/* Replace any sky blue color with theme green */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+  background: #22c55e !important;
+  color: #fff !important;
+}
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--keyboard-selected,
+.dark .react-datepicker__day--in-selecting-range,
+.dark .react-datepicker__day--in-range {
+  background: #22c55e !important;
+  color: #fff !important;
 }
