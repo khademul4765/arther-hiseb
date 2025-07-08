@@ -1,0 +1,14 @@
+/* Glassmorphism for dropdown */
+.glass-dropdown {
+  backdrop-filter: blur(12px) saturate(120%);
+  background: rgba(255,255,255,0.80);
+  box-shadow: 0 8px 32px 0 rgba(34,197,94,0.12), 0 1.5px 8px 0 rgba(34,197,94,0.10);
+}
+.dark .glass-dropdown {
+  background: rgba(17,24,39,0.80);
+}
+
+/* Remove green glow shadow for focus/open */
+.ring-green-400, .shadow-green-glow {
+  box-shadow: none !important;
+}

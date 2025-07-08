@@ -1,19 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { Bell, Moon, Sun, LogOut, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, Sun, Moon, Menu, X, LogOut } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 function formatTime12h(date: Date) {
-  if (!date) return '';
-  let hour = date.getHours();
-  const minute = date.getMinutes().toString().padStart(2, '0');
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minute} ${ampm}`;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 }
 
 export const Header: React.FC = () => {
@@ -23,6 +22,7 @@ export const Header: React.FC = () => {
   const [isInternalToggle, setIsInternalToggle] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationPanelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Listen for mobile menu toggle events from Navigation component
   React.useEffect(() => {
@@ -62,6 +62,50 @@ export const Header: React.FC = () => {
   const { markNotificationAsRead } = useStore();
   const markAllAsRead = () => {
     notifications.filter(n => !n.isRead).forEach(n => markNotificationAsRead(n.id));
+  };
+
+  const handleCloseNotifications = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowNotifications(false);
+  };
+
+  const handleNotificationClick = (notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification) return;
+
+    // Mark as read if not already read
+    if (!notification.isRead) {
+      markNotificationAsRead(notificationId);
+    }
+
+    // Navigate based on notification type and content
+    switch (notification.type) {
+      case 'budget':
+        navigate('/budgets');
+        break;
+      case 'goal':
+        navigate('/goals');
+        break;
+      case 'loan':
+        navigate('/loans');
+        break;
+      case 'insight':
+        // Check if it's a low balance notification
+        if (notification.title === 'কম ব্যালেন্স' || notification.message.includes('ব্যালেন্স মাত্র')) {
+          navigate('/accounts');
+        } else {
+          // For other insights, navigate to transactions
+          navigate('/transactions');
+        }
+        break;
+      default:
+        navigate('/');
+        break;
+    }
+
+    // Close the notification panel
+    setShowNotifications(false);
   };
 
   const handleLogout = async () => {
@@ -161,25 +205,31 @@ export const Header: React.FC = () => {
                     className={`absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl shadow-2xl border z-50 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                   >
                     <div className="p-4 border-b font-bold text-lg flex items-center justify-between">
-                      <span>নোটিফিকেশন</span>
-                      <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-red-500 text-xl">×</button>
+                      <span>বিজ্ঞপ্তি</span>
+                      <button 
+                        onClick={handleCloseNotifications} 
+                        className={`p-1 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                      >
+                        <X size={18} className="text-gray-400 hover:text-red-500" />
+                      </button>
                     </div>
                     {notifications.length > 0 && unreadNotifications > 0 && (
                       <button
                         onClick={markAllAsRead}
-                        className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-b-none rounded-t-xl transition"
+                        className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-base font-semibold transition"
                       >
-                        পড়া হয়েছে
+                        সবাই পঠিত করুন
                       </button>
                     )}
                     {notifications.length === 0 ? (
-                      <div className="p-6 text-center text-gray-400">কোনো নোটিফিকেশন নেই</div>
+                      <div className="p-6 text-center text-gray-400">কোন বিজ্ঞপ্তি নেই</div>
                     ) : (
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                         {notifications.map((n) => (
                           <li
                             key={n.id}
-                            className={`p-4 cursor-pointer transition ${n.isRead ? '' : 'bg-green-50 dark:bg-green-900/30 font-semibold'}`}
+                            onClick={() => handleNotificationClick(n.id)}
+                            className={`p-4 cursor-pointer transition hover:bg-gray-50 dark:hover:bg-gray-700 ${n.isRead ? '' : 'bg-green-50 dark:bg-green-900/30 font-semibold'}`}
                           >
                             <div className="flex items-center justify-between">
                               <span>{n.title}</span>

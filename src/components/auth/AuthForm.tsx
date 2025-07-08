@@ -103,18 +103,7 @@ export const AuthForm: React.FC = () => {
           }, 3000);
         } catch (error: any) {
           console.error('Password reset error:', error);
-          
-          if (error.code === 'auth/user-not-found') {
-            setError('এই ইমেইল দিয়ে কোন অ্যাকাউন্ট পাওয়া যায়নি। প্রথমে নিবন্ধন করুন।');
-          } else if (error.code === 'auth/invalid-email') {
-            setError('ভুল ইমেইল ফরম্যাট');
-          } else if (error.code === 'auth/too-many-requests') {
-            setError('অনেক বেশি চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
-          } else if (error.code === 'auth/network-request-failed') {
-            setError('নেটওয়ার্ক সমস্যা। ইন্টারনেট সংযোগ চেক করুন।');
-          } else {
-            setError(`পাসওয়ার্ড রিসেট ত্রুটি: ${error.message}`);
-          }
+          setError(getErrorMessage(error.code));
         }
       }
     } catch (error: any) {
@@ -164,10 +153,6 @@ export const AuthForm: React.FC = () => {
         return 'অবৈধ পাসওয়ার্ড রিসেট লিংক';
       case 'auth/expired-action-code':
         return 'পাসওয়ার্ড রিসেট লিংক মেয়াদ শেষ হয়ে গেছে';
-      case 'auth/too-many-requests':
-        return 'অনেক বেশি চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।';
-      case 'auth/network-request-failed':
-        return 'নেটওয়ার্ক সমস্যা। ইন্টারনেট সংযোগ চেক করুন।';
       default:
         return `একটি ত্রুটি ঘটেছে: ${errorCode}`;
     }

@@ -191,7 +191,7 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {format(new Date(budgetInfo.startDate), 'dd MMM yyyy')} - {format(new Date(budgetInfo.endDate), 'dd MMM yyyy')}
+                    {format(new Date(budgetInfo.startDate), 'dd MMM yyyy (dd/MM/yyyy)')} - {format(new Date(budgetInfo.endDate), 'dd MMM yyyy (dd/MM/yyyy)')}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -292,7 +292,7 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                               </p>
                               <div className="flex items-center space-x-2 text-sm">
                                 <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                  {format(new Date(transaction.date), 'dd MMM yyyy')}
+                                  {format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')}
                                 </span>
                                 {transaction.person && (
                                   <>

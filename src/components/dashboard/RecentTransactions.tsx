@@ -19,7 +19,22 @@ export const RecentTransactions: React.FC = () => {
   const { transactions, categories, darkMode } = useStore();
 
   const recentTransactions = transactions
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) {
+        return dateB - dateA; // Most recent date first
+      }
+      // If dates are equal, compare time (assuming HH:mm format)
+      function parseTime(t?: string) {
+        if (!t || !/^\d{2}:\d{2}$/.test(t)) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      }
+      const timeA = parseTime(a.time);
+      const timeB = parseTime(b.time);
+      return timeB - timeA; // Most recent time first
+    })
     .slice(0, 5);
 
   const getCategoryIcon = (categoryName: string) => {

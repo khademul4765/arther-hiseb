@@ -178,7 +178,7 @@ export const GoalManager: React.FC = () => {
                 {/* Deadline */}
                 <div className="text-center">
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    শেষ তারিখ: {format(new Date(goal.deadline), 'dd MMM yyyy')}
+                    শেষ তারিখ: {format(new Date(goal.deadline), 'dd MMM yyyy (dd/MM/yyyy)')}
                   </p>
                   {!isCompleted && (
                     <p className={`text-xs ${daysLeft > 0 ? 'text-blue-600' : 'text-red-600'}`}>

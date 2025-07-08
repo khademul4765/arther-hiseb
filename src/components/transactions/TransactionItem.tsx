@@ -76,7 +76,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
                 <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{displayCategory}</h3>
                 <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{transaction.type === 'income' ? (<ArrowUpRight size={16} />) : (<ArrowDownRight size={16} />)}</div>
               </div>
-              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy')}  {formatTime12h(transaction.time)}</p>
+              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')}  {formatTime12h(transaction.time)}</p>
               {/* Extra info row for report view */}
               <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}> 
                 {transaction.accountId && (
@@ -232,7 +232,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               <div><span className="font-semibold">ক্যাটেগরি:</span> {displayCategory}</div>
               <div><span className="font-semibold">পরিমাণ:</span> {transaction.amount.toLocaleString()} ৳</div>
               <div><span className="font-semibold">ধরন:</span> {transaction.type === 'income' ? 'আয়' : 'খরচ'}</div>
-              <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy')}</div>
+              <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')} </div>
               <div><span className="font-semibold">সময়:</span> {formatTime12h(transaction.time)}</div>
               {transaction.accountId && <div><span className="font-semibold">অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</div>}
               {transaction.toAccountId && <div><span className="font-semibold">গন্তব্য অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</div>}

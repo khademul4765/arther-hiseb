@@ -13,7 +13,9 @@ interface GoalFormProps {
 interface FormData {
   name: string;
   targetAmount: number;
+  startDate: string;
   deadline: string;
+  duration?: number;
 }
 
 export const GoalForm: React.FC<GoalFormProps> = ({
@@ -22,15 +24,29 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   goal
 }) => {
   const { addGoal, updateGoal, darkMode } = useStore();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: goal ? {
       name: goal.name,
       targetAmount: goal.targetAmount,
+      startDate: goal.startDate ? goal.startDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       deadline: goal.deadline.toISOString().split('T')[0]
     } : {
+      startDate: new Date().toISOString().split('T')[0],
       deadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     }
   });
+
+  const startDate = watch('startDate');
+  const duration = watch('duration');
+
+  // Auto-calculate deadline when duration or start date changes
+  useEffect(() => {
+    if (startDate && duration && duration > 0) {
+      const start = new Date(startDate);
+      const deadline = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
+      setValue('deadline', deadline.toISOString().split('T')[0]);
+    }
+  }, [startDate, duration, setValue]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -43,6 +59,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   const onFormSubmit = (data: FormData) => {
     const goalData = {
       ...data,
+      startDate: new Date(data.startDate),
       deadline: new Date(data.deadline)
     };
 
@@ -126,6 +143,49 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             {errors.targetAmount && (
               <p className="text-red-500 text-sm mt-1">{errors.targetAmount.message}</p>
             )}
+          </div>
+
+          {/* Start Date */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              শুরুর তারিখ *
+            </label>
+            <div className="relative">
+              <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <input
+                type="date"
+                {...register('startDate', { required: 'শুরুর তারিখ আবশ্যক' })}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              />
+            </div>
+            {errors.startDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.startDate.message}</p>
+            )}
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              সময়কাল (দিনে)
+            </label>
+            <input
+              type="number"
+              min="1"
+              {...register('duration', { min: 1 })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              placeholder="দিনের সংখ্যা লিখুন"
+            />
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+              শুরুর তারিখ থেকে শেষের তারিখ স্বয়ংক্রিয়ভাবে গণনা হবে
+            </p>
           </div>
 
           {/* Deadline */}

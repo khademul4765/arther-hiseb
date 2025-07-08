@@ -200,7 +200,7 @@ export const BudgetManager: React.FC = () => {
                 </div>
 
                 <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {format(new Date(budget.startDate), 'dd MMM yyyy')} - {format(new Date(budget.endDate), 'dd MMM yyyy')}
+                  {format(new Date(budget.startDate), 'dd MMM yyyy (dd/MM/yyyy)')} - {format(new Date(budget.endDate), 'dd MMM yyyy (dd/MM/yyyy)')}
                 </div>
               </div>
             </motion.div>

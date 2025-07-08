@@ -19,6 +19,7 @@ interface FormData {
   date: string;
   dueDate?: string;
   note: string;
+  duration?: number;
 }
 
 export const LoanForm: React.FC<LoanFormProps> = ({
@@ -27,7 +28,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
   loan
 }) => {
   const { addLoan, updateLoan, darkMode, user } = useStore();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: loan ? {
       type: loan.type,
       amount: loan.amount,
@@ -43,6 +44,18 @@ export const LoanForm: React.FC<LoanFormProps> = ({
       note: ''
     }
   });
+
+  const date = watch('date');
+  const duration = watch('duration');
+
+  // Auto-calculate due date when duration or date changes
+  useEffect(() => {
+    if (date && duration && duration > 0) {
+      const start = new Date(date);
+      const dueDate = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
+      setValue('dueDate', dueDate.toISOString().split('T')[0]);
+    }
+  }, [date, duration, setValue]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -211,41 +224,65 @@ export const LoanForm: React.FC<LoanFormProps> = ({
             </div>
           </div>
 
-          {/* Date and Due Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-                তারিখ *
-              </label>
-              <div className="relative">
-                <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                <input
-                  type="date"
-                  {...register('date', { required: 'তারিখ আবশ্যক' })}
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                />
-              </div>
+          {/* Date */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              তারিখ *
+            </label>
+            <div className="relative">
+              <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <input
+                type="date"
+                {...register('date', { required: 'তারিখ আবশ্যক' })}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              />
             </div>
-            <div>
-              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-                শেষ তারিখ
-              </label>
-              <div className="relative">
-                <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                <input
-                  type="date"
-                  {...register('dueDate')}
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                />
-              </div>
+            {errors.date && (
+              <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
+            )}
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              সময়কাল (দিনে)
+            </label>
+            <input
+              type="number"
+              min="1"
+              {...register('duration', { min: 1 })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              placeholder="দিনের সংখ্যা লিখুন"
+            />
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+              তারিখ থেকে শেষের তারিখ স্বয়ংক্রিয়ভাবে গণনা হবে
+            </p>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              শেষ তারিখ
+            </label>
+            <div className="relative">
+              <Calendar size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <input
+                type="date"
+                {...register('dueDate')}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              />
             </div>
           </div>
 

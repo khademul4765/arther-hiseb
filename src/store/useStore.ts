@@ -15,6 +15,7 @@ interface StoreState {
   notifications: Notification[];
   darkMode: boolean;
   isInitialized: boolean;
+  enableNotifications: boolean;
   
   // Auth Actions
   setUser: (user: User | null) => Promise<void>;
@@ -57,6 +58,8 @@ interface StoreState {
   addNotification: (notification: Omit<Notification, 'id' | 'userId' | 'createdAt'>) => void;
   markNotificationAsRead: (id: string) => void;
   clearAllNotifications: () => void;
+  clearTransferNotifications: () => void;
+  toggleNotifications: () => void;
   
   // UI Actions
   toggleDarkMode: () => void;
@@ -69,6 +72,7 @@ interface StoreState {
   calculateBudgetSpent: () => void;
   recalculateAccountBalances: () => void;
   cleanupDuplicateCategories: (userId: string) => Promise<void>;
+  deleteAllUserData: () => Promise<void>;
 }
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -107,7 +111,7 @@ export const useStore = create<StoreState>()(
       notifications: [],
       darkMode: false,
       isInitialized: false,
-
+      enableNotifications: true,
 
       // Auth Actions
       setUser: async (user) => {
@@ -370,19 +374,14 @@ export const useStore = create<StoreState>()(
         const transactionAmount = Number(transaction.amount);
         if (transactionAmount <= 0) return;
         
-        // Ensure the transaction has today's date if not specified
-        const transactionData = {
+        // First add the transaction to Firestore
+        const transactionRef = await addDoc(collection(db, 'transactions'), {
           ...transaction,
           amount: transactionAmount,
-          date: transaction.date || new Date(), // Default to today if no date provided
-          time: transaction.time || new Date().toTimeString().slice(0, 5), // Default to current time
           userId: user.id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        };
-        
-        // First add the transaction to Firestore
-        const transactionRef = await addDoc(collection(db, 'transactions'), transactionData);
+        });
         
         // Then update account balance for income/expense transactions
         if (transaction.type === 'income' || transaction.type === 'expense') {
@@ -1073,6 +1072,12 @@ export const useStore = create<StoreState>()(
       addNotification: async (notification) => {
         const user = get().user;
         if (!user) return;
+        
+        // Check if notification should be shown based on settings
+        if (!get().enableNotifications) {
+          return; // Don't create notification if disabled
+        }
+        
         await addDoc(collection(db, 'notifications'), {
           ...notification,
           userId: user.id,
@@ -1093,6 +1098,18 @@ export const useStore = create<StoreState>()(
         for (const n of notifications) {
           await deleteDoc(doc(db, 'notifications', n.id));
         }
+      },
+
+      clearTransferNotifications: () => {
+        set((state) => ({
+          notifications: state.notifications.filter(
+            (notification) => notification.type !== 'transfer'
+          ),
+        }));
+      },
+
+      toggleNotifications: () => {
+        set((state) => ({ enableNotifications: !state.enableNotifications }));
       },
 
       // UI Actions
@@ -1200,6 +1217,48 @@ export const useStore = create<StoreState>()(
             }
           }
         }
+      },
+
+      clearUserData: () => {
+        const user = get().user;
+        if (!user) return;
+
+        // Only clear current user's data
+        set((state) => ({
+          accounts: state.accounts.filter(a => a.userId !== user.id),
+          transactions: state.transactions.filter(t => t.userId !== user.id),
+          categories: state.categories.filter(c => c.userId !== user.id),
+          budgets: state.budgets.filter(b => b.userId !== user.id),
+          goals: state.goals.filter(g => g.userId !== user.id),
+          loans: state.loans.filter(l => l.userId !== user.id),
+          notifications: state.notifications.filter(n => n.userId !== user.id)
+        }));
+      },
+
+      deleteAllUserData: async () => {
+        const user = get().user;
+        if (!user) return;
+        const userId = user.id;
+        // Helper to delete all docs in a collection for this user
+        const deleteUserDocs = async (collectionName: string) => {
+          const q = query(collection(db, collectionName), where('userId', '==', userId));
+          const snapshot = await getDocs(q);
+          const batchDeletes = snapshot.docs.map(docSnap => deleteDoc(doc(db, collectionName, docSnap.id)));
+          await Promise.all(batchDeletes);
+        };
+        await Promise.all([
+          deleteUserDocs('accounts'),
+          deleteUserDocs('transactions'),
+          deleteUserDocs('categories'),
+          deleteUserDocs('budgets'),
+          deleteUserDocs('goals'),
+          deleteUserDocs('loans'),
+          deleteUserDocs('notifications'),
+        ]);
+        // Remove local storage
+        localStorage.removeItem('orther-hiseb-storage');
+        // Clear local state
+        get().clearUserData();
       },
     }),
     {

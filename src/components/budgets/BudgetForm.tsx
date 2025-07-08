@@ -17,6 +17,7 @@ interface FormData {
   period: 'weekly' | 'monthly' | 'yearly';
   startDate: string;
   endDate: string;
+  duration?: number;
 }
 
 export const BudgetForm: React.FC<BudgetFormProps> = ({
@@ -51,6 +52,17 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
 
   const period = watch('period');
   const selectedCategories = watch('categories') || [];
+  const startDate = watch('startDate');
+  const duration = watch('duration');
+
+  // Auto-calculate end date when duration or start date changes
+  useEffect(() => {
+    if (startDate && duration && duration > 0) {
+      const start = new Date(startDate);
+      const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
+      setValue('endDate', end.toISOString().split('T')[0]);
+    }
+  }, [startDate, duration, setValue]);
 
   // Filter and deduplicate expense categories for current user
   const expenseCategories = useMemo(() => {
@@ -307,6 +319,27 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
               <option value="monthly">মাসিক</option>
               <option value="yearly">বার্ষিক</option>
             </select>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              সময়কাল (দিনে)
+            </label>
+            <input
+              type="number"
+              min="1"
+              {...register('duration', { min: 1 })}
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              placeholder="দিনের সংখ্যা লিখুন"
+            />
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+              শুরুর তারিখ থেকে শেষের তারিখ স্বয়ংক্রিয়ভাবে গণনা হবে
+            </p>
           </div>
 
           {/* Date Range */}

@@ -20,7 +20,6 @@ const navigationItems = [
 
 // Bottom navigation items (mobile only)
 const bottomNavItems = [
-
   { path: '/accounts', name: 'অ্যাকাউন্ট', icon: Wallet },
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
   { path: '/', name: 'হোম', icon: Home },

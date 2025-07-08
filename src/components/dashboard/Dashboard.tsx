@@ -7,7 +7,7 @@ import { GoalsProgress } from './GoalsProgress';
 import { ExpenseChart } from './ExpenseChart';
 import { LoanProgress } from '../loans/LoanProgress';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Target, CreditCard, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, CreditCard, ArrowDownCircle, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { transactions, budgets, goals, accounts, loans, darkMode } = useStore();
@@ -30,6 +30,9 @@ export const Dashboard: React.FC = () => {
   const totalLoanTaken = loans.filter(l => l.type === 'borrowed').reduce((sum, l) => sum + l.amount, 0);
   const totalMoneyLent = loans.filter(l => l.type === 'lent').reduce((sum, l) => sum + l.amount, 0);
 
+  // Check if balance is low (under 100 taka)
+  const isLowBalance = balance < 100;
+
   return (
     <div className="space-y-4 md:space-y-6">
       <motion.div
@@ -44,6 +47,30 @@ export const Dashboard: React.FC = () => {
         <div className={`w-20 h-1 ${darkMode ? 'bg-green-500' : 'bg-green-600'} rounded-full mb-6 md:ml-0 mx-auto`}></div>
       </motion.div>
 
+      {/* Low Balance Notification */}
+      {isLowBalance && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className={`${darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200'} border-2 rounded-xl p-4 md:p-6 shadow-lg`}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <AlertTriangle size={24} className="text-red-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-red-300' : 'text-red-800'}`}>
+                কম ব্যালেন্স সতর্কতা
+              </h3>
+              <p className={`text-base ${darkMode ? 'text-red-200' : 'text-red-700'} mt-1`}>
+                আপনার ব্যালেন্স এখনও {balance.toLocaleString()} টাকা। এটি কম হলে আমাদের সাহায্য করুন।
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -51,34 +78,34 @@ export const Dashboard: React.FC = () => {
         className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
       >
         <StatsCard
-          title="মোট বর্তমান ব্যালেন্স"
-          value={`${balance.toLocaleString()} ৳`}
+          title="বর্তমান ব্যালেন্স"
+          value={`${balance.toLocaleString()} টাকা`}
           icon={<CreditCard size={20} className="md:w-6 md:h-6" />}
           color="bg-blue-600"
           trend={balance > 0 ? '+' : ''}
         />
         <StatsCard
           title="মোট আয়"
-          value={`${totalIncome.toLocaleString()} ৳`}
+          value={`${totalIncome.toLocaleString()} টাকা`}
           icon={<TrendingUp size={20} className="md:w-6 md:h-6" />}
           color="bg-green-600"
           trend="+"
         />
         <StatsCard
-          title="মোট খরচ"
-          value={`${totalExpense.toLocaleString()} ৳`}
+          title="মোট ব্যয়"
+          value={`${totalExpense.toLocaleString()} টাকা`}
           icon={<TrendingDown size={20} className="md:w-6 md:h-6" />}
           color="bg-red-600"
           trend="-"
         />
         <StatsCard
-          title="সক্রিয় লক্ষ্য"
+          title="কাজের লক্ষ্য"
           value={
             <div>
               <div>{activeGoals.toString()}</div>
               <div className="text-xs mt-1 text-gray-500 dark:text-gray-300">
-                টার্গেট: {totalTargetedSaving.toLocaleString()} ৳<br/>
-                সেভড: {totalSavedMoney.toLocaleString()} ৳
+                লক্ষ্য: {totalTargetedSaving.toLocaleString()} টাকা<br/>
+                সঞ্চিত: {totalSavedMoney.toLocaleString()} টাকা
               </div>
             </div>
           }
@@ -88,14 +115,14 @@ export const Dashboard: React.FC = () => {
         />
         <StatsCard
           title="মোট ঋণ"
-          value={`${totalLoanTaken.toLocaleString()} ৳`}
+          value={`${totalLoanTaken.toLocaleString()} টাকা`}
           icon={<ArrowDownCircle size={20} className="md:w-6 md:h-6" />}
           color="bg-pink-600"
           trend={totalLoanTaken > 0 ? '-' : ''}
         />
         <StatsCard
-          title="মোট পাওনা"
-          value={`${totalMoneyLent.toLocaleString()} ৳`}
+          title="মোট টাকা ধারাবাদী"
+          value={`${totalMoneyLent.toLocaleString()} টাকা`}
           icon={<ArrowUpCircle size={20} className="md:w-6 md:h-6" />}
           color="bg-yellow-600"
           trend={totalMoneyLent > 0 ? '+' : ''}
