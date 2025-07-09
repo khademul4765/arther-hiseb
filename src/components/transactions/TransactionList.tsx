@@ -10,10 +10,10 @@ import { ThemedCheckbox } from '../common/ThemedCheckbox';
 import { format } from 'date-fns';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import bn from 'date-fns/locale/bn';
+import { bn } from 'date-fns/locale/bn';
 
 // Add helper for custom calendar footer
-function CalendarFooter({ onToday, onClear, darkMode }) {
+function CalendarFooter({ onToday, onClear, darkMode }: { onToday: () => void; onClear: () => void; darkMode: boolean }) {
   return (
     <div className="flex justify-between px-3 pb-2 pt-1">
       <button
@@ -28,6 +28,29 @@ function CalendarFooter({ onToday, onClear, darkMode }) {
       >মুছুন</button>
     </div>
   );
+}
+
+// Helper for Bengali type label
+function getTypeLabel(type: 'income' | 'expense' | 'transfer') {
+  switch (type) {
+    case 'income': return 'আয়';
+    case 'expense': return 'খরচ';
+    case 'transfer':
+    default: return 'ট্রান্সফার';
+  }
+}
+// Type guard for transfer
+function isTransfer(t: Transaction): t is Transaction & { type: 'transfer' } {
+  return t.type === 'transfer';
+}
+// Helper for category label
+function getCategoryLabel(transaction: Transaction) {
+  const t = transaction as any;
+  // @ts-ignore
+  if (t.type === 'transfer') {
+    return getTypeLabel(t.type);
+  }
+  return t.category;
 }
 
 export const TransactionList: React.FC = () => {
@@ -45,10 +68,11 @@ export const TransactionList: React.FC = () => {
 
   // Filter transactions by date range
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || (transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category) === filterCategory;
-    const matchesType = !filterType || transaction.type === filterType;
+    const t = transaction as any;
+    const matchesSearch = t.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         getCategoryLabel(t).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !filterCategory || getCategoryLabel(t) === filterCategory;
+    const matchesType = !filterType || t.type === filterType;
     
     // Date range filtering
     const transactionDate = new Date(transaction.date);
@@ -136,38 +160,6 @@ export const TransactionList: React.FC = () => {
     if (hour === 0) hour = 12;
     return `${hour}:${minute} ${ampm}`;
   }
-  const handleExport = () => {
-    // Export selected transactions as CSV
-    const selected = sortedTransactions.filter(t => selectedTransactions.includes(t.id));
-    if (selected.length === 0) {
-      setToast({ message: 'কোনো লেনদেন নির্বাচন করা হয়নি!' });
-      return;
-    }
-    const csv = [
-      ['ID', 'Amount', 'Type', 'Category', 'Account', 'Date', 'Time', 'Person', 'Note', 'Tags'].join(','),
-      ...selected.map(t => [
-        t.id,
-        t.amount,
-        t.type,
-        t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
-        t.accountId,
-        t.date,
-        formatTime12h(t.time),
-        t.person,
-        t.note,
-        t.tags.join(';')
-      ].map(x => `"${x ?? ''}"`).join(','))
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'transactions.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
   const handleDelete = () => {
     if (selectedTransactions.length === 0) return;
     if (!window.confirm('নির্বাচিত লেনদেনগুলো মুছে ফেলতে চান?')) return;
@@ -195,7 +187,16 @@ export const TransactionList: React.FC = () => {
     setToast(null);
     setPendingDelete(null);
   };
-  const totalSelectedAmount = sortedTransactions.filter(t => selectedTransactions.includes(t.id)).reduce((sum, t) => sum + t.amount * (t.type === 'expense' ? -1 : 1), 0);
+  const totalSelectedAmount = sortedTransactions.filter(t => selectedTransactions.includes(t.id)).reduce((sum, t) => {
+    switch (t.type) {
+      case 'expense':
+        return sum - t.amount;
+      case 'income':
+        return sum + t.amount;
+      default:
+        return sum;
+    }
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -250,14 +251,9 @@ export const TransactionList: React.FC = () => {
             <CategorySelect
               value={filterCategory}
               onChange={setFilterCategory}
-              options={Array.from(new Set(sortedTransactions.map(t => t.type === 'transfer' ? null : t.category))).filter(Boolean).map(cat => ({ value: cat, label: cat }))}
+              options={Array.from(new Set(sortedTransactions.map(getCategoryLabel))).filter((cat): cat is string => Boolean(cat)).map(cat => ({ value: cat, label: cat }))}
               placeholder="সব ক্যাটেগরি"
               disabled={false}
-              className={`w-full rounded-lg border shadow-sm transition focus:outline-none
-                ${darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white focus:ring-2 focus:ring-green-500' 
-                  : 'bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-green-500'}
-              `}
             />
           </div>
           {/* Type Select */}
@@ -291,19 +287,15 @@ export const TransactionList: React.FC = () => {
                 calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali`}
                 popperPlacement="bottom-start"
                 isClearable
-                renderCustomHeader={(props) => (
-                  <>
-                    {props.children}
-                    <CalendarFooter
-                      onToday={() => {
-                        props.changeMonth(new Date().getMonth());
-                        props.changeYear(new Date().getFullYear());
-                        props.onChange(new Date());
-                      }}
-                      onClear={() => props.onChange(null)}
-                      darkMode={darkMode}
-                    />
-                  </>
+                renderCustomHeader={({ changeMonth, changeYear }) => (
+                  <CalendarFooter
+                    onToday={() => {
+                      changeMonth(new Date().getMonth());
+                      changeYear(new Date().getFullYear());
+                    }}
+                    onClear={() => {}}
+                    darkMode={darkMode}
+                  />
                 )}
               />
             </div>
@@ -323,19 +315,15 @@ export const TransactionList: React.FC = () => {
                 calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali`}
                 popperPlacement="bottom-start"
                 isClearable
-                renderCustomHeader={(props) => (
-                  <>
-                    {props.children}
-                    <CalendarFooter
-                      onToday={() => {
-                        props.changeMonth(new Date().getMonth());
-                        props.changeYear(new Date().getFullYear());
-                        props.onChange(new Date());
-                      }}
-                      onClear={() => props.onChange(null)}
-                      darkMode={darkMode}
-                    />
-                  </>
+                renderCustomHeader={({ changeMonth, changeYear }) => (
+                  <CalendarFooter
+                    onToday={() => {
+                      changeMonth(new Date().getMonth());
+                      changeYear(new Date().getFullYear());
+                    }}
+                    onClear={() => {}}
+                    darkMode={darkMode}
+                  />
                 )}
               />
             </div>
@@ -375,7 +363,6 @@ export const TransactionList: React.FC = () => {
             <span className="font-bold">মোট: {totalSelectedAmount.toLocaleString()} ৳</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleExport} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">CSV এরের হিসাব</button>
             <button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">মুছে ফেলুন</button>
             <button onClick={handleDeselectAll} className="px-4 py-2 rounded-lg bg-gray-400 text-white hover:bg-gray-500">সব বাতিল করুন</button>
           </div>
@@ -412,8 +399,12 @@ export const TransactionList: React.FC = () => {
                       onChange={() => handleSelect(transaction.id)}
                       disabled={false}
                     />
-                    <div className="flex-1">
-                      <TransactionItem transaction={transaction} />
+                    <div className="flex-1 ml-8">
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        darkMode={darkMode}
+                      />
                     </div>
                   </div>
                 ))}

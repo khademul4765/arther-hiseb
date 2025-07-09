@@ -18,6 +18,17 @@ interface FormData {
   isDefault?: boolean;
 }
 
+// Custom MFS icon: smartphone outline with ৳ sign
+const MfsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    {/* Smartphone outline */}
+    <rect x="6" y="3" width="12" height="18" rx="2.5" />
+    <circle cx="12" cy="19" r="0.7" />
+    {/* ৳ sign in bottom right */}
+    <text x="16.5" y="20.5" fontSize="7" fontWeight="bold" fill="currentColor">৳</text>
+  </svg>
+);
+
 export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, account }) => {
   const { addAccount, updateAccount, darkMode, accounts } = useStore();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
@@ -67,7 +78,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
       case 'bank':
         return <Building2 size={20} className="text-blue-600" />;
       case 'mfs':
-        return <Smartphone size={20} className="text-red-600" />;
+        return <MfsIcon className="text-red-600" />;
       default:
         return <Wallet size={20} />;
     }
@@ -170,7 +181,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, acc
                   {...register('type', { required: 'অ্যাকাউন্টের ধরন আবশ্যক' })} 
                   className="sr-only" 
                 />
-                <Smartphone size={24} className={selectedType === 'mfs' ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                <MfsIcon className={selectedType === 'mfs' ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-600'} />
                 <span className={`text-sm mt-1 ${selectedType === 'mfs' ? 'text-red-600 font-medium' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>MFS</span>
               </label>
             </div>

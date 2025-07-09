@@ -10,6 +10,8 @@ import { format } from 'date-fns';
 import { bn } from 'date-fns/locale';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { AnalogClockTimePicker } from './AnalogClockTimePicker';
+import ReactDOM from 'react-dom';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -167,6 +169,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [localDate, setLocalDate] = useState<string>(transaction ? transaction.date.toISOString().split('T')[0] : getTodayString());
   const [date, setDate] = useState<string>(transaction ? transaction.date.toISOString().split('T')[0] : getTodayString());
   const datePickerRef = useRef(null);
+  const [showClock, setShowClock] = useState(false);
+  const timeInputRef = useRef(null);
+  const clockModalRef = useRef(null);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<FormData>({
     defaultValues: transaction ? {
@@ -341,7 +346,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <input
                 id="custom-year-input"
                 type="number"
-                className="w-full px-3 py-2 rounded-lg border text-center text-base font-bengali focus:ring-2 focus:ring-green-400 focus:border-green-400 shadow transition bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+                className="w-full px-3 py-2 rounded-lg border text-center text-base font-bengali focus:ring-2 focus:ring-green-400 focus:border-green-400 shadow transition bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:outline-none"
                 placeholder="লিখুন"
                 value={customYear}
                 onChange={e => {
@@ -382,6 +387,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     );
   }
 
+  const handleClockClose = (e: MouseEvent) => {
+    if (
+      timeInputRef.current &&
+      !timeInputRef.current.contains(e.target) &&
+      clockModalRef.current &&
+      !clockModalRef.current.contains(e.target)
+    ) {
+      setShowClock(false);
+    }
+  };
+  React.useEffect(() => {
+    if (showClock) {
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('mousedown', handleClockClose);
+      return () => {
+        document.body.style.overflow = '';
+        document.removeEventListener('mousedown', handleClockClose);
+      };
+    }
+  }, [showClock]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -397,7 +423,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       >
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <h2 className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{transaction ? 'লেনদেন সম্পাদনা' : 'নতুন লেনদেন'}</h2>
-          <button onClick={onClose} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+          <button onClick={onClose} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}>
             <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
           </button>
         </div>
@@ -411,7 +437,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 type="number"
                 step="0.01"
                 {...register('amount', { required: 'পরিমাণ আবশ্যক', min: 0.01 })}
-                className={`w-full pl-8 pr-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                className={`w-full pl-8 pr-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
                 placeholder="০.০০"
               />
             </div>
@@ -474,10 +500,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>তারিখ *</label>
-              <div className="relative flex items-center">
+              <div className={`flex items-center rounded-lg border ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'} shadow-sm focus-within:ring-2 focus-within:ring-green-400 focus-within:border-transparent transition-all`}>
                 <CalendarIcon
-                  size={20}
-                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}
+                  size={22}
+                  className={`ml-3 mr-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}
                 />
                 <ReactDatePicker
                   ref={datePickerRef}
@@ -495,7 +521,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   dateFormat="yyyy-MM-dd"
                   locale={bn}
                   placeholderText="তারিখ বাছাই করুন"
-                  className={`w-full pl-10 pr-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'} shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all`}
+                  className={`w-full pl-2 pr-3 py-2 rounded-r-lg border-0 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} focus:ring-0 focus:border-transparent focus:outline-none`}
                   calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
                   popperPlacement="bottom-start"
                   isClearable
@@ -522,14 +548,46 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
             <div>
               <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>সময় *</label>
-              <div className="relative">
-                <Clock size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <div className={`flex items-center rounded-lg border relative ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'} shadow-sm focus-within:ring-2 focus-within:ring-green-400 focus-within:border-transparent transition-all`}>
+                <Clock size={22} className={`ml-3 mr-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
                 <input
-                  type="time"
-                  {...register('time', { required: 'সময় আবশ্যক' })}
-                  className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                  ref={timeInputRef}
+                  type="text"
+                  value={(() => {
+                    const t = watch('time');
+                    if (!t) return '';
+                    const [h, m] = t.split(':').map(Number);
+                    let hour = h % 12 || 12;
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    return `${hour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+                  })()}
+                  readOnly
+                  onClick={() => setShowClock(true)}
+                  className={`w-full pl-2 pr-3 py-2 rounded-r-lg border-0 cursor-pointer ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} focus:ring-0 focus:border-transparent focus:outline-none`}
+                  placeholder="সময় নির্বাচন করুন"
                 />
+                {showClock && ReactDOM.createPortal(
+                  <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.35)' }} />
+                    <div
+                      ref={clockModalRef}
+                      style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 9999, boxShadow: '0 8px 32px #0006', borderRadius: 20, background: 'transparent' }}
+                    >
+                      <AnalogClockTimePicker
+                        value={watch('time')}
+                        onChange={val => {
+                          setValue('time', val, { shouldValidate: true });
+                          setShowClock(false);
+                        }}
+                        darkMode={darkMode}
+                        onCancel={() => setShowClock(false)}
+                      />
+                    </div>
+                  </>,
+                  document.body
+                )}
               </div>
+              {errors.time && <span className="text-red-500 text-sm mt-1">{errors.time.message}</span>}
             </div>
           </div>
 
@@ -541,7 +599,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <input
                 type="text"
                 {...register('person')}
-                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
                 placeholder="ব্যক্তি/ প্রতিষ্ঠানের নাম"
               />
             </div>
@@ -554,7 +612,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <textarea
                 {...register('note')}
                 rows={3}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
                 placeholder="বিস্তারিত লিখুন..."
               />
             </div>
@@ -567,7 +625,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <input
                 type="text"
                 {...register('tags')}
-                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
                 placeholder="ট্যাগসমূহ কমা দিয়ে আলাদা করুন"
               />
             </div>

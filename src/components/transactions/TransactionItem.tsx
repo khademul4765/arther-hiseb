@@ -3,16 +3,17 @@ import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
 import { TransferForm } from '../accounts/TransferForm';
 import { motion } from 'framer-motion';
-import { Edit2, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { Transaction } from '../../types';
 
 interface TransactionItemProps {
-  transaction: Transaction;
+  transaction: import('../../types').Transaction & { toAccountId?: string };
+  darkMode: boolean;
 }
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
-  const { deleteTransaction, categories, darkMode, accounts } = useStore();
+export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, darkMode }) => {
+  const { deleteTransaction, categories, darkMode: appDarkMode, accounts } = useStore();
   const [showEditForm, setShowEditForm] = useState(false);
   const [showEditTransferForm, setShowEditTransferForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -49,9 +50,21 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
   }
 
   // Helper to detect transfer
-  const isTransfer = transaction.type === 'transfer' || (transaction.accountId && transaction.toAccountId);
+  const isTransfer = transaction.type === 'transfer';
 
-  const displayCategory = transaction.type === 'transfer' ? 'ট্রান্সফার' : transaction.category;
+  const displayCategory = isTransfer ? 'ট্রান্সফার' : transaction.category;
+
+  function getTypeColorAndIcon(type: 'income' | 'expense' | 'transfer') {
+    switch (type) {
+      case 'income':
+        return { color: 'text-green-600', icon: <ArrowUpRight size={16} /> };
+      case 'expense':
+        return { color: 'text-red-600', icon: <ArrowDownRight size={16} /> };
+      case 'transfer':
+      default:
+        return { color: 'text-blue-600', icon: <ArrowRightLeft size={16} /> };
+    }
+  }
 
   return (
     <>
@@ -72,9 +85,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
               {getCategoryIcon(transaction.category)}
             </motion.div>
             <div className="flex-1">
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center space-x-2`}>
                 <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{displayCategory}</h3>
-                <div className={`${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{transaction.type === 'income' ? (<ArrowUpRight size={16} />) : (<ArrowDownRight size={16} />)}</div>
+                {(() => {
+                  const { color, icon } = getTypeColorAndIcon(transaction.type);
+                  return <div className={color}>{icon}</div>;
+                })()}
               </div>
               <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')}  {formatTime12h(transaction.time)}</p>
               {/* Extra info row for report view */}
@@ -82,7 +98,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
                 {transaction.accountId && (
                   <span>অ্যাকাউন্ট: {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</span>
                 )}
-                {transaction.toAccountId && (
+                {isTransfer && transaction.toAccountId && (
                   <span> → {accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</span>
                 )}
               </div>
@@ -101,11 +117,21 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className={`text-2xl font-bold ${
-                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}{transaction.amount.toLocaleString()} ৳
-              </p>
+              {(() => {
+                const { color } = getTypeColorAndIcon(transaction.type);
+                let sign = '';
+                switch (transaction.type) {
+                  case 'income':
+                    sign = '+';
+                    break;
+                  case 'expense':
+                    sign = '-';
+                    break;
+                  default:
+                    sign = '';
+                }
+                return <p className={`text-2xl font-bold ${color}`}>{sign}{transaction.amount.toLocaleString()} ৳</p>;
+              })()}
             </div>
             
             <div className="flex items-center space-x-2">
@@ -154,7 +180,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
           // Pre-fill transfer data
           initialData={{
             fromAccountId: transaction.accountId,
-            toAccountId: transaction.toAccountId,
+            toAccountId: transaction.toAccountId || '',
             amount: transaction.amount,
             note: transaction.note,
             id: transaction.id
@@ -231,7 +257,17 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             <div className="space-y-2">
               <div><span className="font-semibold">ক্যাটেগরি:</span> {displayCategory}</div>
               <div><span className="font-semibold">পরিমাণ:</span> {transaction.amount.toLocaleString()} ৳</div>
-              <div><span className="font-semibold">ধরন:</span> {transaction.type === 'income' ? 'আয়' : 'খরচ'}</div>
+              <div><span className="font-semibold">ধরন:</span> {(() => {
+                switch (transaction.type) {
+                  case 'income':
+                    return 'আয়';
+                  case 'expense':
+                    return 'খরচ';
+                  case 'transfer':
+                  default:
+                    return 'ট্রান্সফার';
+                }
+              })()}</div>
               <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')} </div>
               <div><span className="font-semibold">সময়:</span> {formatTime12h(transaction.time)}</div>
               {transaction.accountId && <div><span className="font-semibold">অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</div>}

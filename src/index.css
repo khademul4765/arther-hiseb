@@ -188,23 +188,25 @@ body {
 .react-datepicker__month-container,
 .react-datepicker__calendar {
   background-color: #fff !important;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   box-shadow: 0 2px 8px 0 rgba(34,197,94,0.06);
   border: none !important;
   padding: 0;
+  overflow: hidden;
 }
 .dark .react-datepicker__month-container,
 .dark .react-datepicker__calendar {
   background-color: #18181b !important;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   box-shadow: 0 2px 8px 0 rgba(20,83,45,0.10);
   border: none !important;
   padding: 0;
+  overflow: hidden;
 }
 /* Week name bar: soft green, deep green text, rounded top */
 .react-datepicker__header {
   background-color: #22c55e !important;
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: 1rem 1rem 0 0;
   border: none;
   box-shadow: 0 1px 4px 0 rgba(34,197,94,0.08);
   padding: 0.25rem 0 0.15rem 0;
@@ -212,7 +214,7 @@ body {
 }
 .dark .react-datepicker__header {
   background-color: #14532d !important;
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: 1rem 1rem 0 0;
   border: none;
   box-shadow: 0 1px 4px 0 rgba(20,83,45,0.12);
   padding: 0.25rem 0 0.15rem 0;
@@ -220,7 +222,7 @@ body {
 }
 .react-datepicker__day-names {
   background-color: #22c55e !important; /* theme green for both modes */
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: 1rem 1rem 0 0;
   border-top: 3px solid #22c55e; /* green-500 */
   margin-top: 0 !important;
   display: flex !important;
@@ -248,7 +250,7 @@ body {
 }
 /* Calendar grid rounded bottom corners */
 .react-datepicker__month {
-  border-radius: 0 0 0.75rem 0.75rem;
+  border-radius: 0 0 1rem 1rem;
   background: none !important;
 }
 /* Day cell minimal style */
@@ -432,4 +434,64 @@ body {
 .dark .react-datepicker__day--in-range {
   background: #22c55e !important;
   color: #fff !important;
+}
+
+/* Make react-datepicker clear (X) button background red */
+.react-datepicker__close-icon::after {
+  background-color: #ef4444 !important; /* red-500 */
+  border-radius: 50% !important;
+}
+.react-datepicker__close-icon:hover::after {
+  background-color: #b91c1c !important; /* red-700 */
+}
+
+/* Friday and Saturday dates in red */
+.react-datepicker__day:nth-child(6n+6), /* Friday */
+.react-datepicker__day:nth-child(7n+7) { /* Saturday */
+  color: #ef4444 !important; /* red-500 */
+}
+.dark .react-datepicker__day:nth-child(6n+6), /* Friday */
+.dark .react-datepicker__day:nth-child(7n+7) { /* Saturday */
+  color: #f87171 !important; /* red-400 */
+}
+
+/* Friday and Saturday hover states */
+.react-datepicker__day:nth-child(6n+6):hover, /* Friday */
+.react-datepicker__day:nth-child(7n+7):hover { /* Saturday */
+  background-color: #fef2f2 !important; /* red-50 */
+  color: #dc2626 !important; /* red-600 */
+}
+.dark .react-datepicker__day:nth-child(6n+6):hover, /* Friday */
+.dark .react-datepicker__day:nth-child(7n+7):hover { /* Saturday */
+  background-color: #7f1d1d !important; /* red-900 */
+  color: #fca5a5 !important; /* red-300 */
+}
+
+/* Selected Friday and Saturday dates - white text */
+.react-datepicker__day--selected:nth-child(6n+6), /* Friday */
+.react-datepicker__day--selected:nth-child(7n+7), /* Saturday */
+.react-datepicker__day--keyboard-selected:nth-child(6n+6), /* Friday */
+.react-datepicker__day--keyboard-selected:nth-child(7n+7) { /* Saturday */
+  color: #fff !important; /* white */
+}
+.dark .react-datepicker__day--selected:nth-child(6n+6), /* Friday */
+.dark .react-datepicker__day--selected:nth-child(7n+7), /* Saturday */
+.dark .react-datepicker__day--keyboard-selected:nth-child(6n+6), /* Friday */
+.dark .react-datepicker__day--keyboard-selected:nth-child(7n+7) { /* Saturday */
+  color: #fff !important; /* white */
+}
+
+/* Hide browser default clock icon in time inputs */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+input[type="time"]::-webkit-inner-spin-button,
+input[type="time"]::-webkit-outer-spin-button {
+  display: none;
+}
+input[type="time"]::-ms-clear {
+  display: none;
+}
+input[type="time"]::-ms-reveal {
+  display: none;
 }

@@ -149,9 +149,9 @@ export const Header: React.FC = () => {
               <motion.div 
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-transparent"
               >
-                <span className="text-white font-bold text-xl">৳</span>
+                <img src="/logo.svg" alt="Logo" className="w-10 h-10 object-contain" />
               </motion.div>
               <div>
                 <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>অর্থের হিসেব</h1>
@@ -218,7 +218,7 @@ export const Header: React.FC = () => {
                         onClick={markAllAsRead}
                         className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-base font-semibold transition"
                       >
-                        সবাই পঠিত করুন
+                        পড়া হয়েছে।
                       </button>
                     )}
                     {notifications.length === 0 ? (

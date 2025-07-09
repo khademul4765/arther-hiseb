@@ -64,7 +64,7 @@ export const Dashboard: React.FC = () => {
                 কম ব্যালেন্স সতর্কতা
               </h3>
               <p className={`text-base ${darkMode ? 'text-red-200' : 'text-red-700'} mt-1`}>
-                আপনার ব্যালেন্স এখনও {balance.toLocaleString()} টাকা। এটি কম হলে আমাদের সাহায্য করুন।
+                আপনার ব্যালেন্স এখনও {balance.toLocaleString()} টাকা।
               </p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export const Dashboard: React.FC = () => {
           trend="-"
         />
         <StatsCard
-          title="কাজের লক্ষ্য"
+          title="লক্ষ্য"
           value={
             <div>
               <div>{activeGoals.toString()}</div>
@@ -121,7 +121,7 @@ export const Dashboard: React.FC = () => {
           trend={totalLoanTaken > 0 ? '-' : ''}
         />
         <StatsCard
-          title="মোট টাকা ধারাবাদী"
+          title="মোট পাওনা"
           value={`${totalMoneyLent.toLocaleString()} টাকা`}
           icon={<ArrowUpCircle size={20} className="md:w-6 md:h-6" />}
           color="bg-yellow-600"

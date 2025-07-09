@@ -546,8 +546,8 @@ export const AuthForm: React.FC = () => {
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl">
-              <span className="text-white font-bold text-3xl">৳</span>
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl bg-transparent">
+              <img src="/logo.svg" alt="Logo" className="w-20 h-20 object-contain" />
             </div>
           </motion.div>
           <h2 className={`mt-6 text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide`}>

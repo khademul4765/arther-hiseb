@@ -5,10 +5,9 @@ import { TransferForm } from './TransferForm';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone } from 'lucide-react';
 import { TransactionItem } from '../transactions/TransactionItem';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { CategorySelect } from '../common/CategorySelect';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
+
 
 interface AccountCardProps {
   account: any;
@@ -20,13 +19,14 @@ interface AccountCardProps {
   setShowDeleteConfirm: (id: string) => void;
 }
 
-const AccountCard: React.FC<AccountCardProps & { isDefault?: boolean; onSetDefault?: (id: string) => void }> = ({ account, darkMode, getAccountIcon, getAccountTypeName, onEdit, setShowDeleteConfirm, isDefault, onSetDefault }) => (
+const AccountCard: React.FC<AccountCardProps & { isDefault?: boolean; onSetDefault?: (id: string) => void; onClick?: () => void }> = ({ account, darkMode, getAccountIcon, getAccountTypeName, onEdit, setShowDeleteConfirm, isDefault, onSetDefault, onClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
     whileHover={{ scale: 1.035 }}
-    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-green-200 dark:hover:ring-green-900/30 backdrop-blur-sm transition-all duration-300`}
+    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-green-200 dark:hover:ring-green-900/30 backdrop-blur-sm transition-all duration-300 cursor-pointer`}
+    onClick={onClick}
   >
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center space-x-3">
@@ -38,7 +38,7 @@ const AccountCard: React.FC<AccountCardProps & { isDefault?: boolean; onSetDefau
           <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{getAccountTypeName(account.type)}</p>
         </div>
       </div>
-      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
+      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
         {/* Default account indicator/button for cash accounts */}
         {onSetDefault && (
           <button
@@ -98,7 +98,6 @@ export const AccountManager: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Remove defaultAccountId state and useEffect
 
@@ -173,59 +172,149 @@ export const AccountManager: React.FC = () => {
 
   // Filtered transactions for statement
   const statementTransactions = transactions
-    .filter(t => t.accountId === selectedAccount?.id || t.toAccountId === selectedAccount?.id)
+    .filter(t => t.accountId === selectedAccount?.id)
     .filter(t => {
       if (filterType && t.type !== filterType) return false;
-      if (filterCategory && (t.type === 'transfer' ? 'ট্রান্সফার' : t.category) !== filterCategory) return false;
+      if (filterCategory && t.category !== filterCategory) return false;
       if (filterStartDate && new Date(t.date) < new Date(filterStartDate)) return false;
       if (filterEndDate && new Date(t.date) > new Date(filterEndDate)) return false;
       return true;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Export to CSV
-  const handleExportCSV = () => {
-    const header = ['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'পরিমাণ', 'নোট', 'ট্যাগ'];
-    const rows = statementTransactions.map(t => [
-      new Date(t.date).toLocaleDateString('bn-BD'),
-      t.time,
-      t.type,
-      t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
-      t.amount,
-      t.note,
-      t.tags.filter(tag => tag !== 'ট্রান্সফার').join(', ')
-    ]);
-    const csvContent = [header, ...rows].map(row => row.map(field => `"${(field ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selectedAccount?.name || 'statement'}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  // Export to PDF
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text(`${selectedAccount?.name || ''} - Statement`, 10, 10);
-    const tableData = statementTransactions.map(t => [
-      new Date(t.date).toLocaleDateString('bn-BD'),
-      t.time,
-      t.type,
-      t.type === 'transfer' ? 'ট্রান্সফার' : t.category,
-      t.amount,
-      t.note,
-      t.tags.filter(tag => tag !== 'ট্রান্সফার').join(', ')
-    ]);
-    doc.autoTable({
-      head: [['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'পরিমাণ', 'নোট', 'ট্যাগ']],
-      body: tableData,
-      startY: 20
+  // Print statement transactions
+  const handlePrint = () => {
+    if (!selectedAccount) return;
+    const appName = 'অর্থের হিসেব';
+    const creatorName = 'by MK Bashar';
+    const logoUrl = window.location.origin + '/logo.svg';
+    const tableHeaders = ['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'আয়', 'খরচ', 'নোট'];
+    // Helper to convert English digits to Bengali
+    const toBengaliDigits = (str: string) => String(str).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[Number(d)]);
+    // Helper to pad numbers to two digits
+    const pad2 = (n: string | number) => n.toString().padStart(2, '0');
+    // Helper to format date in Bengali with two digits for day and month
+    const formatDateBengali = (dateObj: Date) => {
+      const d = dateObj.getDate();
+      const m = dateObj.getMonth() + 1;
+      const y = dateObj.getFullYear();
+      return `${toBengaliDigits(String(pad2(d)))}/${toBengaliDigits(String(pad2(m)))}/${toBengaliDigits(String(y))}`;
+    };
+    // Helper to format time in Bengali with two digits for hour and minute, AM/PM in English
+    const formatTimeBengali = (time: string) => {
+      if (!time) return '';
+      const [h, m] = time.split(':');
+      let hour = parseInt(h, 10);
+      const minute = m;
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12;
+      if (hour === 0) hour = 12;
+      return `${toBengaliDigits(String(pad2(hour)))}:${toBengaliDigits(String(pad2(minute)))} ${ampm}`;
+    };
+    let totalIncome = 0;
+    let totalExpense = 0;
+    const tableRows = statementTransactions.map(t => {
+      let income = '';
+      let expense = '';
+      if (t.type === 'income') {
+        income = `<span style='color:#00B44C;font-weight:600;font-size:1.1em;'>${t.amount.toLocaleString()} ৳</span>`;
+        totalIncome += t.amount;
+      } else if (t.type === 'expense') {
+        expense = `<span style='color:#e53935;font-weight:600;font-size:1.1em;'>${t.amount.toLocaleString()} ৳</span>`;
+        totalExpense += t.amount;
+      }
+      return [
+        formatDateBengali(new Date(t.date)),
+        formatTimeBengali(t.time),
+        t.type === 'income' ? 'আয়' : 'খরচ',
+        t.category,
+        income,
+        expense,
+        t.note
+      ];
     });
-    doc.save(`${selectedAccount?.name || 'statement'}.pdf`);
+    let totalRow = `<tr>
+      <td colspan='4' style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>মোট</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>${toBengaliDigits(totalIncome.toLocaleString())} ৳</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>${toBengaliDigits(totalExpense.toLocaleString())} ৳</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;background:#00B44C;'></td>
+    </tr>`;
+    // Helper to format the printed date/time in Bengali with two digits for day, month, hour, minute, second
+    const formatPrintedDateTime = (dateObj: Date) => {
+      const d = dateObj.getDate();
+      const m = dateObj.getMonth() + 1;
+      const y = dateObj.getFullYear();
+      const h = dateObj.getHours();
+      const min = dateObj.getMinutes();
+      const s = dateObj.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      let hour12 = h % 12;
+      if (hour12 === 0) hour12 = 12;
+      return `${toBengaliDigits(String(pad2(d)))}/${toBengaliDigits(String(pad2(m)))}/${toBengaliDigits(String(y))}, ${toBengaliDigits(String(pad2(hour12)))}:${toBengaliDigits(String(pad2(min)))}:${toBengaliDigits(String(pad2(s)))} ${ampm}`;
+    };
+    let html = `
+      <div class=\"print-header\" style=\"text-align:center;margin-bottom:16px;position:relative;z-index:1;\">
+        <img src=\"${logoUrl}\" alt=\"Logo\" style=\"width:64px;height:64px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;\" />
+        <div style=\"font-size:2rem;font-weight:bold;color:#00B44C;font-family:'Noto Serif Bengali',serif;margin-bottom:0px;\">${appName}</div>
+        <div style=\"font-size:1.1rem;color:#666;margin-bottom:18px;font-family:'Noto Serif Bengali',serif;\">${creatorName}</div>
+        <div style=\"font-size:1.5rem;font-weight:700;margin-top:18px;margin-bottom:8px;font-family:'Noto Serif Bengali',serif;\">অ্যাকাউন্ট স্টেটমেন্ট - ${selectedAccount.name}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows.map(row => `<tr>${row.map((cell,i) => `<td>${cell || ''}</td>`).join('')}</tr>`).join('')}
+          ${totalRow.replace('<tr>', '<tr class=\"total-row\">')}
+        </tbody>
+      </table>
+      <div style=\"position:fixed;bottom:24px;right:32px;left:32px;text-align:right;font-size:0.95rem;color:#888;font-family:'Noto Serif Bengali',serif;z-index:100;\">মুদ্রিত: ${formatPrintedDateTime(new Date())}</div>
+    `;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`<html><head><title>${appName} - অ্যাকাউন্ট স্টেটমেন্ট - ${selectedAccount?.name || ''}</title>`);
+    printWindow.document.write('<meta charset="UTF-8">');
+    printWindow.document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">');
+    printWindow.document.write('<style>body{font-family:\'Noto Serif Bengali\',serif;background:#fff;padding:32px;} .print-header{margin-bottom:24px;} table{box-shadow:0 2px 8px #0001;border-radius:12px;overflow:hidden;width:100%;border-collapse:separate;border-spacing:0;margin-top:18px;} th,td{transition:background 0.2s;text-align:center;vertical-align:middle;} th{background:#00B44C;color:#fff;letter-spacing:0.5px;font-size:1.08rem;font-weight:700;padding:12px 8px;border:1px solid #e5e7eb;} td{font-size:1rem;padding:10px 8px;border:1px solid #e5e7eb;} tr:nth-child(even):not(.total-row){background:#f3fef6;} .total-row td{font-size:1.05rem;font-weight:700;background:#00B44C;color:#fff;} @media print { body { background: #fff !important; } }</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(html);
+    printWindow.document.write('<script>setTimeout(function(){window.print();window.onafterprint=function(){window.close();};},300);</script>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
   };
+
+  // Debounce for print
+  let printTimeout: NodeJS.Timeout | null = null;
+  const handlePrintDebounced = () => {
+    if (printTimeout) return;
+    handlePrint();
+    printTimeout = setTimeout(() => { printTimeout = null; }, 1000);
+  };
+
+  // Utility to fetch image as base64
+  const getBase64FromUrl = async (url: string) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  useEffect(() => {
+    if (!showAccountTransactions) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAccountTransactions(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAccountTransactions]);
 
   return (
     <div className="space-y-6">
@@ -282,9 +371,12 @@ export const AccountManager: React.FC = () => {
             getAccountIcon={getAccountIcon}
             getAccountTypeName={getAccountTypeName}
             onEdit={handleEdit}
+            onDelete={handleDelete}
             setShowDeleteConfirm={setShowDeleteConfirm}
-            isDefault={account.isDefault}
-            onSetDefault={handleSetDefault}
+            onClick={() => {
+              setSelectedAccount(account);
+              setShowAccountTransactions(true);
+            }}
           />
         ))}
 
@@ -376,7 +468,7 @@ export const AccountManager: React.FC = () => {
               </button>
             </div>
             {/* Filters and Export */}
-            <div className="flex flex-wrap gap-2 mb-4 items-end">
+            <div className="flex flex-wrap gap-3 mb-4 items-end md:flex-nowrap">
               <div>
                 <label className="block text-xs mb-1">ধরন</label>
                 <select
@@ -397,7 +489,7 @@ export const AccountManager: React.FC = () => {
               <CategorySelect
                 value={filterCategory}
                 onChange={setFilterCategory}
-                options={Array.from(new Set(transactions.map(t => t.type === 'transfer' ? 'ট্রান্সফার' : t.category))).map(cat => ({ value: cat, label: cat }))}
+                options={Array.from(new Set(transactions.map(t => t.category))).map(cat => ({ value: cat, label: cat }))}
                 placeholder="সব"
                 disabled={false}
               />
@@ -415,7 +507,7 @@ export const AccountManager: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs mb-1">শেষ তারিখ</label>
+                <label className="block text-xs mb-1">শেষর তারিখ</label>
                 <input
                   type="date"
                   value={filterEndDate}
@@ -427,58 +519,67 @@ export const AccountManager: React.FC = () => {
                   } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 />
               </div>
-              <div className="relative ml-auto">
+              <div className="flex space-x-2">
                 <button
-                  onClick={() => setShowExportMenu(v => !v)}
-                  className="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-xs font-semibold"
+                  onClick={handlePrintDebounced}
+                  className={`px-4 py-2 rounded-lg border ${
+                    darkMode
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  Export
+                  প্রিন্ট / ডাউনলোড
                 </button>
-                {showExportMenu && (
-                  <div className={`absolute right-0 mt-2 w-32 rounded shadow-lg z-10 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border`}>
-                    <button
-                      onClick={() => { handleExportCSV(); setShowExportMenu(false); }}
-                      className="block w-full text-left px-4 py-2 hover:bg-green-100 dark:hover:bg-gray-700"
-                    >
-                      Export CSV
-                    </button>
-                    <button
-                      onClick={() => { handleExportPDF(); setShowExportMenu(false); }}
-                      className="block w-full text-left px-4 py-2 hover:bg-green-100 dark:hover:bg-gray-700"
-                    >
-                      Export PDF
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
-            <div className="space-y-4">
-              {statementTransactions.length === 0 ? (
-                <p className={`text-center py-8 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোনো লেনদেন নেই</p>
-              ) : (
-                statementTransactions.map((transaction) => (
-                  <TransactionItem key={transaction.id} transaction={transaction} />
-                ))
+
+            {/* Transactions List */}
+            <div className="mt-6 space-y-4">
+              {statementTransactions.length === 0 && (
+                <p className={`text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>কোনো লেনদেন খুঁজে পাওয়া যায়নি</p>
               )}
+              {statementTransactions.map((transaction) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  darkMode={darkMode}
+                  onEdit={() => {
+                    // This functionality is not yet implemented
+                  }}
+                  onDelete={() => {
+                    // This functionality is not yet implemented
+                  }}
+                />
+              ))}
             </div>
           </motion.div>
         </motion.div>
       )}
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-fade-in">
-          <span>{toast.message}</span>
-          {toast.action && (
-            <button
-              onClick={toast.action}
-              className="ml-2 px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition"
-            >
-              Undo
-            </button>
-          )}
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed bottom-4 right-4 z-50"
+        >
+          <div
+            className={`px-4 py-2 rounded-lg shadow-lg ${
+              toast.action ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`}
+          >
+            {toast.message}
+            {toast.action && (
+              <button onClick={toast.action} className="ml-2 text-white">
+                পুনরায় করুন
+              </button>
+            )}
+          </div>
+        </motion.div>
       )}
     </div>
   );
 };
+
+export default AccountManager;

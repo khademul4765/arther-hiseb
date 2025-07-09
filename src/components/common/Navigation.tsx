@@ -5,6 +5,20 @@ import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Set
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemedCheckbox } from './ThemedCheckbox';
 
+// Modern minimal document icon for reports tab (lighter stroke)
+const MinimalDocumentIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    {/* Document/receipt outline */}
+    <rect x="4.5" y="3.5" width="15" height="17" rx="2.5" />
+    {/* Three horizontal lines */}
+    <line x1="8" y1="8" x2="16" y2="8" />
+    <line x1="8" y1="11" x2="16" y2="11" />
+    <line x1="8" y1="14" x2="13" y2="14" />
+    {/* Small circle (dot) in bottom right */}
+    <circle cx="17" cy="18" r="1.1" />
+  </svg>
+);
+
 const navigationItems = [
   { path: '/', name: 'ড্যাশবোর্ড', icon: Home },
   { path: '/accounts', name: 'অ্যাকাউন্টস', icon: Wallet },
@@ -12,7 +26,7 @@ const navigationItems = [
   { path: '/budgets', name: 'বাজেট', icon: TrendingUp },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
   { path: '/loans', name: 'ঋণ ও পাওনা', icon: Users },
-  { path: '/reports', name: 'রিপোর্ট', icon: Receipt },
+  { path: '/reports', name: 'রিপোর্ট', icon: MinimalDocumentIcon },
   { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
   { path: '/profile', name: 'প্রোফাইল', icon: User },
   { path: '/settings', name: 'সেটিংস', icon: Settings },
