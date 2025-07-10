@@ -154,8 +154,8 @@ export const Header: React.FC = () => {
                 <img src="/logo.svg" alt="Logo" className="w-10 h-10 object-contain" />
               </motion.div>
               <div>
-                <h1 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>অর্থের হিসেব</h1>
-                <p className={`text-base font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>by MK Bashar</p>
+                <h1 className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} tracking-wide whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md`}>অর্থের হিসেব</h1>
+                <p className={`font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} whitespace-nowrap truncate max-w-[160px] sm:max-w-xs md:max-w-sm lg:max-w-md -mt-1`} style={{ fontSize: '13.3px' }}>by MK Bashar</p>
               </div>
             </div>
           </div>

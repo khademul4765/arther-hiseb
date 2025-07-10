@@ -3,10 +3,15 @@ import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone, RotateCcw, FilterIcon } from 'lucide-react';
 import { TransactionItem } from '../transactions/TransactionItem';
 import { CategorySelect } from '../common/CategorySelect';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
+import { Account } from '../../types';
+import ReactDatePicker from 'react-datepicker';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { bn } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css';
 
 
 interface AccountCardProps {
@@ -83,8 +88,91 @@ const AccountCard: React.FC<AccountCardProps & { isDefault?: boolean; onSetDefau
   </motion.div>
 );
 
+// Add helper for custom calendar footer
+interface CalendarFooterProps {
+  onToday: () => void;
+  onClear: () => void;
+  darkMode: boolean;
+}
+function CalendarFooter({ onToday, onClear, darkMode }: CalendarFooterProps) {
+  return (
+    <div className="flex justify-between px-3 pb-2 pt-1 w-full">
+      <button
+        type="button"
+        onClick={onClear}
+        className={`px-3 py-1 rounded-lg font-medium text-sm ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition`}
+      >মুছুন</button>
+      <button
+        type="button"
+        onClick={onToday}
+        className={`px-3 py-1 rounded-lg font-medium text-sm ${darkMode ? 'bg-green-700 text-white hover:bg-green-600' : 'bg-green-500 text-white hover:bg-green-600'} transition`}
+      >আজ</button>
+    </div>
+  );
+}
+
+// Add a custom calendar container for react-datepicker
+interface CustomCalendarContainerProps {
+  className?: string;
+  children: React.ReactNode;
+  onToday: () => void;
+  onClear: () => void;
+  darkMode: boolean;
+}
+function CustomCalendarContainer({ className, children, onToday, onClear, darkMode }: CustomCalendarContainerProps) {
+  return (
+    <div className={className + ' relative'}>
+      {children}
+      <div className="absolute bottom-0 left-0 w-full flex pointer-events-none">
+        <div className="pointer-events-auto w-full">
+          <CalendarFooter onToday={onToday} onClear={onClear} darkMode={darkMode} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Custom header for year/month selection
+interface DatePickerHeaderProps {
+  date: Date;
+  changeYear: (year: number) => void;
+  changeMonth: (month: number) => void;
+  darkMode: boolean;
+}
+function DatePickerHeader({ date, changeYear, changeMonth, darkMode }: DatePickerHeaderProps) {
+  const years = Array.from({ length: 2100 - 2023 + 1 }, (_, i) => 2023 + i);
+  const months = [
+    "জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"
+  ];
+  return (
+    <div
+      className="flex items-center justify-center gap-2 py-3 rounded-t-xl shadow-sm"
+      style={{ background: darkMode ? '#18181b' : '#FCFFFD' }}
+    >
+      <select
+        value={date.getFullYear()}
+        onChange={e => changeYear(Number(e.target.value))}
+        className="px-2 py-1 rounded border"
+      >
+        {years.map(year => (
+          <option key={year} value={year}>{year.toLocaleString('bn-BD').replace(/,/g, '')}</option>
+        ))}
+      </select>
+      <select
+        value={date.getMonth()}
+        onChange={e => changeMonth(Number(e.target.value))}
+        className="px-2 py-1 rounded border"
+      >
+        {months.map((month, idx) => (
+          <option key={month} value={idx}>{month}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export const AccountManager: React.FC = () => {
-  const { accounts, deleteAccount, darkMode, transactions, updateAccount } = useStore();
+  const { accounts, deleteAccount, darkMode, transactions, updateAccount, categories } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
@@ -98,12 +186,13 @@ export const AccountManager: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Remove defaultAccountId state and useEffect
 
   const handleSetDefault = async (id: string) => {
     for (const acc of accounts) {
-      await updateAccount(acc.id, { isDefault: acc.id === id });
+      await updateAccount(acc.id, { isDefault: acc.id === id } as Partial<Account>);
     }
   };
 
@@ -174,7 +263,17 @@ export const AccountManager: React.FC = () => {
   const statementTransactions = transactions
     .filter(t => t.accountId === selectedAccount?.id)
     .filter(t => {
-      if (filterType && t.type !== filterType) return false;
+      // Handle transfer filtering - transfers only show in transfer type, not in income/expense
+      if (filterType === 'transfer') {
+        // When transfer type is selected, show only transfer transactions
+        if (t.category !== 'ট্রান্সফার') return false;
+      } else if (filterType === 'income') {
+        // When income type is selected, show income transactions EXCLUDING transfers
+        if (t.type !== 'income' || t.category === 'ট্রান্সফার') return false;
+      } else if (filterType === 'expense') {
+        // When expense type is selected, show expense transactions EXCLUDING transfers
+        if (t.type !== 'expense' || t.category === 'ট্রান্সফার') return false;
+      }
       if (filterCategory && t.category !== filterCategory) return false;
       if (filterStartDate && new Date(t.date) < new Date(filterStartDate)) return false;
       if (filterEndDate && new Date(t.date) > new Date(filterEndDate)) return false;
@@ -456,7 +555,7 @@ export const AccountManager: React.FC = () => {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto`}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAccount.name} - স্টেটমেন্ট</h2>
@@ -467,71 +566,207 @@ export const AccountManager: React.FC = () => {
                 ✕
               </button>
             </div>
-            {/* Filters and Export */}
-            <div className="flex flex-wrap gap-3 mb-4 items-end md:flex-nowrap">
-              <div>
-                <label className="block text-xs mb-1">ধরন</label>
-                <select
-                  value={filterType}
-                  onChange={e => setFilterType(e.target.value)}
-                  className={`px-4 py-2 rounded-lg border ${
+
+            {/* Mobile Filter Toggle Button */}
+            <div className="lg:hidden mb-4">
+              <button
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-3 font-medium text-base ${
+                  darkMode
+                    ? 'border-green-500 text-green-400 hover:bg-green-500 hover:text-white hover:border-green-400 shadow-lg hover:shadow-green-500/25'
+                    : 'border-green-500 text-green-600 hover:bg-green-500 hover:text-white hover:border-green-600 shadow-lg hover:shadow-green-500/25'
+                } ${showMobileFilters ? 'bg-green-500 text-white border-green-400' : ''}`}
+              >
+                <FilterIcon size={20} className={`transition-transform duration-300 ${showMobileFilters ? 'rotate-180' : ''}`} />
+                {showMobileFilters ? 'ফিল্টার বন্ধ করুন' : 'ফিল্টার করুন'}
+              </button>
+            </div>
+
+            {/* Enhanced Filters and Export */}
+            <div className={`bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 mb-6 border border-green-200 dark:border-gray-600 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'} flex items-center gap-2`}>
+                  <FilterIcon size={16} className={darkMode ? 'text-green-400' : 'text-green-600'} />
+                  ফিল্টার অপশন
+                </h3>
+                <button
+                  onClick={() => {
+                    setFilterType('');
+                    setFilterCategory('');
+                    setFilterStartDate('');
+                    setFilterEndDate('');
+                  }}
+                  className={`text-xs px-3 py-1 rounded-full border transition-all ${
                     darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400'
+                  }`}
                 >
-                  <option value="">সব ধরনের</option>
-                  <option value="income">আয়</option>
-                  <option value="expense">খরচ</option>
-                  <option value="transfer">ট্রান্সফার</option>
-                </select>
+                  <RotateCcw size={14} className="inline mr-1" />
+                  রিসেট
+                </button>
               </div>
+              
+              {/* Filter Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                {/* Type Filter */}
+                <div className="flex flex-col min-h-[80px] flex-1 min-w-[140px]">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'} truncate`}>
+                    💰 ধরন
+                  </label>
+                  <div className="flex-1">
+                    <CategorySelect
+                      value={filterType}
+                      onChange={setFilterType}
+                      options={[
+                        { value: '', label: '📊 সব ধরনের' },
+                        { value: 'income', label: '📈 আয়' },
+                        { value: 'expense', label: '📉 খরচ' },
+                        { value: 'transfer', label: '🔄 ট্রান্সফার' }
+                      ]}
+                      placeholder="সব ধরন"
+                      disabled={false}
+                      showSearch={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="flex flex-col min-h-[80px] flex-1 min-w-[140px]">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'} truncate`}>
+                    🏷️ ক্যাটেগরি
+                  </label>
+                  <div className="flex-1">
               <CategorySelect
                 value={filterCategory}
                 onChange={setFilterCategory}
-                options={Array.from(new Set(transactions.map(t => t.category))).map(cat => ({ value: cat, label: cat }))}
-                placeholder="সব"
+                      options={categories
+                        .filter(cat => cat.name !== 'ট্রান্সফার')
+                        .map(cat => ({ value: cat.name, label: `${cat.icon} ${cat.name}` }))}
+                      placeholder="সব ক্যাটেগরি"
                 disabled={false}
-              />
-              <div>
-                <label className="block text-xs mb-1">শুরুর তারিখ</label>
+                      showSearch={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Start Date Filter */}
+                <div className="flex flex-col min-h-[80px] flex-1 min-w-[140px]">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'} truncate`}>
+                    📅 শুরুর তারিখ
+                  </label>
+                  <ReactDatePicker
+                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                    onChange={date => setFilterStartDate(date ? date.toISOString().slice(0, 10) : '')}
+                    dateFormat="yyyy-MM-dd"
+                    locale={bn}
+                    placeholderText="তারিখ বাছাই করুন"
+                    customInput={
+                      <div className={`w-full px-3 py-2.5 rounded-lg border text-sm transition-all cursor-pointer flex items-center gap-2 ${
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500 focus:border-green-400'
+                          : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 focus:border-green-500'
+                      } focus:ring-2 focus:ring-green-500/20 focus:outline-none`}>
+                        <CalendarIcon size={18} className={`${darkMode ? 'text-green-400' : 'text-green-600'}`} />
                 <input
-                  type="date"
-                  value={filterStartDate}
-                  onChange={e => setFilterStartDate(e.target.value)}
-                  className={`px-4 py-2 rounded-lg border ${
+                          type="text"
+                          className="w-full bg-transparent border-0 outline-none cursor-pointer"
+                          placeholder="তারিখ বাছাই করুন"
+                          readOnly
+                        />
+                      </div>
+                    }
+                    calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
+                    popperPlacement="bottom-start"
+                    isClearable
+                    renderCustomHeader={(props) => (
+                      <DatePickerHeader {...props} darkMode={darkMode} />
+                    )}
+                    calendarContainer={(props) => (
+                      <CustomCalendarContainer
+                        {...props}
+                        onToday={() => setFilterStartDate(new Date().toISOString().slice(0, 10))}
+                        onClear={() => setFilterStartDate('')}
+                        darkMode={darkMode}
+                      />
+                    )}
+                  />
+                </div>
+
+                {/* End Date Filter */}
+                <div className="flex flex-col min-h-[80px] flex-1 min-w-[140px]">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'} truncate`}>
+                    📅 শেষের তারিখ
+                  </label>
+                  <ReactDatePicker
+                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                    onChange={date => setFilterEndDate(date ? date.toISOString().slice(0, 10) : '')}
+                    dateFormat="yyyy-MM-dd"
+                    locale={bn}
+                    placeholderText="তারিখ বাছাই করুন"
+                    customInput={
+                      <div className={`w-full px-3 py-2.5 rounded-lg border text-sm transition-all cursor-pointer flex items-center gap-2 ${
                     darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                          ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500 focus:border-green-400'
+                          : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 focus:border-green-500'
+                      } focus:ring-2 focus:ring-green-500/20 focus:outline-none`}>
+                        <CalendarIcon size={18} className={`${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+                        <input
+                          type="text"
+                          className="w-full bg-transparent border-0 outline-none cursor-pointer"
+                          placeholder="তারিখ বাছাই করুন"
+                          readOnly
                 />
               </div>
-              <div>
-                <label className="block text-xs mb-1">শেষর তারিখ</label>
-                <input
-                  type="date"
-                  value={filterEndDate}
-                  onChange={e => setFilterEndDate(e.target.value)}
-                  className={`px-4 py-2 rounded-lg border ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                    }
+                    calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
+                    popperPlacement="bottom-start"
+                    isClearable
+                    renderCustomHeader={(props) => (
+                      <DatePickerHeader {...props} darkMode={darkMode} />
+                    )}
+                    calendarContainer={(props) => (
+                      <CustomCalendarContainer
+                        {...props}
+                        onToday={() => setFilterEndDate(new Date().toISOString().slice(0, 10))}
+                        onClear={() => setFilterEndDate('')}
+                        darkMode={darkMode}
+                      />
+                    )}
                 />
               </div>
-              <div className="flex space-x-2">
+
+                {/* Export Button */}
+                <div className="flex flex-col min-h-[80px] flex-1 min-w-[140px]">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'} truncate`}>
+                    📄 এক্সপোর্ট
+                  </label>
                 <button
-                  onClick={handlePrintDebounced}
-                  className={`px-4 py-2 rounded-lg border ${
-                    darkMode
-                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  প্রিন্ট / ডাউনলোড
-                </button>
+                    onClick={handlePrintDebounced}
+                    className={`w-full h-full px-4 py-2.5 rounded-lg border transition-all duration-200 ${
+                      darkMode
+                        ? 'border-green-600 text-green-400 hover:bg-green-600 hover:text-white hover:border-green-500'
+                        : 'border-green-500 text-green-600 hover:bg-green-500 hover:text-white hover:border-green-600'
+                    } focus:ring-2 focus:ring-green-500/20 focus:outline-none`}
+                  >
+                    🖨️ প্রিন্ট / ডাউনলোড
+                    </button>
+                  </div>
               </div>
             </div>
+
+            {/* Active Filters Summary */}
+            {(filterType || filterCategory || filterStartDate || filterEndDate) && (
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className="font-medium">সক্রিয় ফিল্টার:</span>
+                  {filterType && <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">ধরন: {filterType === 'income' ? 'আয়' : filterType === 'expense' ? 'খরচ' : 'ট্রান্সফার'}</span>}
+                  {filterCategory && <span className="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">ক্যাটেগরি: {filterCategory}</span>}
+                  {filterStartDate && <span className="ml-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded">শুরুর তারিখ: {filterStartDate}</span>}
+                  {filterEndDate && <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded">শেষের তারিখ: {filterEndDate}</span>}
+                </div>
+              </div>
+            )}
 
             {/* Transactions List */}
             <div className="mt-6 space-y-4">
@@ -543,39 +778,10 @@ export const AccountManager: React.FC = () => {
                   key={transaction.id}
                   transaction={transaction}
                   darkMode={darkMode}
-                  onEdit={() => {
-                    // This functionality is not yet implemented
-                  }}
-                  onDelete={() => {
-                    // This functionality is not yet implemented
-                  }}
                 />
               ))}
             </div>
           </motion.div>
-        </motion.div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className="fixed bottom-4 right-4 z-50"
-        >
-          <div
-            className={`px-4 py-2 rounded-lg shadow-lg ${
-              toast.action ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`}
-          >
-            {toast.message}
-            {toast.action && (
-              <button onClick={toast.action} className="ml-2 text-white">
-                পুনরায় করুন
-              </button>
-            )}
-          </div>
         </motion.div>
       )}
     </div>

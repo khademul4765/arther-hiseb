@@ -3,12 +3,13 @@ import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
 import { TransferForm } from '../accounts/TransferForm';
 import { motion } from 'framer-motion';
-import { Edit2, Trash2, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpRight, ArrowDownRight, ArrowRightLeft, Printer, Info } from 'lucide-react';
 import { format } from 'date-fns';
-import { Transaction } from '../../types';
+import { Transaction } from '../../types/index';
+import './TransactionReceiptPrint.css';
 
 interface TransactionItemProps {
-  transaction: import('../../types').Transaction & { toAccountId?: string };
+  transaction: Transaction & { toAccountId?: string };
   darkMode: boolean;
 }
 
@@ -92,7 +93,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
                   return <div className={color}>{icon}</div>;
                 })()}
               </div>
-              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')}  {formatTime12h(transaction.time)}</p>
+              <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{format(new Date(transaction.date), 'dd MMM yyyy')}  {formatTime12h(transaction.time)}</p>
               {/* Extra info row for report view */}
               <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}> 
                 {transaction.accountId && (
@@ -242,39 +243,97 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+            className={`relative w-full max-w-md p-0 rounded-2xl shadow-2xl border-0 print:shadow-none print:border-0 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+            style={{ boxShadow: '0 8px 32px 0 rgba(34,197,94,0.18)' }}
             onClick={e => e.stopPropagation()}
+            id="transaction-details-modal-print"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>লেনদেনের বিস্তারিত</h2>
-              <button
-                onClick={() => setShowDetails(false)}
-                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-              >
-                ✕
-              </button>
+            {/* Header Bar */}
+            <div className="flex items-center gap-3 px-6 pt-6 pb-3 rounded-t-2xl border-b border-green-200 print:rounded-none print:border-0 print:pt-4 print:pb-2 print:px-0 print:bg-white print:justify-center" style={{ background: '#DEF8E7', borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem' }}>
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/80 shadow-lg border-4 border-green-500">
+                <Info size={28} className="text-green-600 dark:text-green-300" />
+              </div>
+              <h2 className="text-xl font-extrabold text-green-900 dark:text-green-100 tracking-tight flex-1 text-center">লেনদেনের বিস্তারিত</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    window.printModalContent && window.printModalContent('transaction-details-modal-print');
+                  }}
+                  className="p-2 rounded-lg bg-green-500 hover:bg-green-600 transition text-white flex items-center gap-1 shadow-md print:hidden"
+                  title="প্রিন্ট করুন"
+                >
+                  <Printer size={20} />
+                </button>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  className="p-2 rounded-lg transition text-green-900 dark:text-green-100 hover:bg-green-50 dark:hover:bg-green-900 hover:text-green-600 focus:outline-none"
+                  title="বন্ধ করুন"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <div><span className="font-semibold">ক্যাটেগরি:</span> {displayCategory}</div>
-              <div><span className="font-semibold">পরিমাণ:</span> {transaction.amount.toLocaleString()} ৳</div>
-              <div><span className="font-semibold">ধরন:</span> {(() => {
-                switch (transaction.type) {
-                  case 'income':
-                    return 'আয়';
-                  case 'expense':
-                    return 'খরচ';
-                  case 'transfer':
-                  default:
-                    return 'ট্রান্সফার';
-                }
-              })()}</div>
-              <div><span className="font-semibold">তারিখ:</span> {format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')} </div>
-              <div><span className="font-semibold">সময়:</span> {formatTime12h(transaction.time)}</div>
-              {transaction.accountId && <div><span className="font-semibold">অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</div>}
-              {transaction.toAccountId && <div><span className="font-semibold">গন্তব্য অ্যাকাউন্ট:</span> {accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</div>}
-              {transaction.person && <div><span className="font-semibold">ব্যক্তি / প্রতিষ্ঠান:</span> {transaction.person}</div>}
-              {transaction.note && <div><span className="font-semibold">নোট:</span> {transaction.note}</div>}
-              {transaction.tags.length > 0 && <div><span className="font-semibold">ট্যাগ:</span> {transaction.tags.join(', ')}</div>}
+            {/* Card Content (visible on screen) */}
+            <div className="relative bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-gray-900 dark:to-gray-800 rounded-b-2xl border-t-0 border border-green-200 p-8 space-y-4 print:hidden">
+              {/* Main card content as before */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3 mb-2">
+                </div>
+                <div className="grid grid-cols-3 gap-x-2 gap-y-4 items-center w-full max-w-xs mx-auto">
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">তারিখ</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{format(new Date(transaction.date), 'dd MMM yyyy')}</span>
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">সময়</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{formatTime12h(transaction.time)}</span>
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">ধরন</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{(() => {
+                    switch (transaction.type) {
+                      case 'income': return 'আয়';
+                      case 'expense': return 'খরচ';
+                      case 'transfer': return 'ট্রান্সফার';
+                      default: return transaction.type;
+                    }
+                  })()}</span>
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">ক্যাটেগরি</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span className="truncate">{displayCategory}</span>
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">পরিমাণ</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span className={
+                    `font-bold text-lg ` +
+                    (transaction.type === 'income' ? 'text-green-600' : transaction.type === 'expense' ? 'text-red-500' : 'text-gray-700 dark:text-gray-200')
+                  }>
+                    {transaction.amount.toLocaleString()} ৳
+                  </span>
+                  <span className="font-semibold text-green-700 dark:text-green-300 text-right">অ্যাকাউন্ট</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId}</span>
+                  {transaction.toAccountId && <><span className="font-semibold text-green-700 dark:text-green-300 text-right">গন্তব্য অ্যাকাউন্ট</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</span></>}
+                  {transaction.person && <><span className="font-semibold text-green-700 dark:text-green-300 text-right">ব্যক্তি / প্রতিষ্ঠান</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{transaction.person}</span></>}
+                  {transaction.note && <><span className="font-semibold text-green-700 dark:text-green-300 text-right">নোট</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{transaction.note}</span></>}
+                  {transaction.tags.length > 0 && <><span className="font-semibold text-green-700 dark:text-green-300 text-right">ট্যাগ</span><span className="text-green-700 dark:text-green-300 text-center">:</span><span>{transaction.tags.join(', ')}</span></>}
+                </div>
+              </div>
+            </div>
+            {/* Print-only receipt layout */}
+            <div className="hidden print:block print:receipt-paper-outer">
+              <div className="print:receipt-title">লেনদেন রসিদ</div>
+              <div className="print:receipt-fields">
+                <div>ক্যাটেগরি:</div>
+                <div className="print:receipt-underline">{displayCategory || '—'}</div>
+                <div>ধরন:</div>
+                <div className="print:receipt-underline">{(() => {
+                  switch (transaction.type) {
+                    case 'income': return 'আয়';
+                    case 'expense': return 'খরচ';
+                    case 'transfer': return 'ট্রান্সফার';
+                    default: return transaction.type;
+                  }
+                })()}</div>
+                <div>অ্যাকাউন্ট:</div>
+                <div className="print:receipt-underline">{accounts.find(a => a.id === transaction.accountId)?.name || transaction.accountId || '—'}</div>
+                {transaction.toAccountId && <><div>গন্তব্য অ্যাকাউন্ট:</div><div className="print:receipt-underline">{accounts.find(a => a.id === transaction.toAccountId)?.name || transaction.toAccountId}</div></>}
+                {transaction.person && <><div>ব্যক্তি / প্রতিষ্ঠান:</div><div className="print:receipt-underline">{transaction.person}</div></>}
+                {transaction.note && <><div>নোট:</div><div className="print:receipt-underline">{transaction.note}</div></>}
+                {transaction.tags.length > 0 && <><div>ট্যাগ:</div><div className="print:receipt-underline">{transaction.tags.join(', ')}</div></>}
+                <div className="print:receipt-amount-label">পরিমাণ (টাকা):</div>
+                <div className="print:receipt-amount">{transaction.amount.toLocaleString()} ৳</div>
+              </div>
+              <div className="print:receipt-footer">
+                <div className="print:receipt-signature">প্রাপ্তির স্বাক্ষর</div>
+                <div className="print:receipt-signature">অনুমোদিত স্বাক্ষর</div>
+              </div>
+              <div className="print:receipt-bottom-bar"></div>
             </div>
           </motion.div>
         </motion.div>
@@ -282,3 +341,23 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
     </>
   );
 };
+
+// Add this at the top of the file (after imports)
+declare global {
+  interface Window {
+    printModalContent?: (id: string) => void;
+  }
+}
+
+// Print helper for modal only
+if (typeof window !== 'undefined' && !window.printModalContent) {
+  window.printModalContent = (id: string) => {
+    const printContents = document.getElementById(id)?.innerHTML;
+    if (!printContents) return;
+    const originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+  };
+}

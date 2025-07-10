@@ -68,7 +68,7 @@ export const Navigation: React.FC = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className={`hidden md:block fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transition-transform duration-300 ease-in-out z-40 shadow-xl`}>
+      <nav className={`hidden md:block fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'} border-r transition-transform duration-300 ease-in-out z-40 shadow-xl backdrop-blur-sm`}>
         <div className="p-4">
           <ul className="space-y-2">
             {navigationItems.map((item) => {
@@ -81,15 +81,15 @@ export const Navigation: React.FC = () => {
                 >
                   <NavLink
                     to={item.path}
-                    className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-300 ${
                       isActive
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105'
                         : darkMode
-                        ? 'text-gray-300 hover:bg-gray-700 hover:shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                        ? 'text-gray-300 hover:bg-gray-700/50 hover:shadow-md hover:text-gray-200'
+                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-md hover:text-gray-900'
                     }`}
                   >
-                    <item.icon size={20} />
+                    <item.icon size={20} className={isActive ? 'drop-shadow-sm' : ''} />
                     <span className="font-medium text-lg">{item.name}</span>
                   </NavLink>
                 </motion.li>
@@ -122,7 +122,7 @@ export const Navigation: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className={`md:hidden fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r z-50 overflow-y-auto shadow-2xl`}
+              className={`md:hidden fixed left-0 top-16 h-full w-64 ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'} border-r z-50 overflow-y-auto shadow-2xl backdrop-blur-sm`}
             >
               <div className="p-4">
                 <ul className="space-y-2">
@@ -142,15 +142,15 @@ export const Navigation: React.FC = () => {
                               detail: { isOpen: false }
                             }));
                           }}
-                          className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 ${
+                          className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-300 ${
                             isActive
-                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105'
                               : darkMode
-                              ? 'text-gray-300 hover:bg-gray-700 hover:shadow-md'
-                              : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                              ? 'text-gray-300 hover:bg-gray-700/50 hover:shadow-md hover:text-gray-200'
+                              : 'text-gray-700 hover:bg-gray-100 hover:shadow-md hover:text-gray-900'
                           }`}
                         >
-                          <item.icon size={20} />
+                          <item.icon size={20} className={isActive ? 'drop-shadow-sm' : ''} />
                           <span className="font-medium text-lg">{item.name}</span>
                         </NavLink>
                       </motion.li>
@@ -164,24 +164,24 @@ export const Navigation: React.FC = () => {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-40 shadow-lg backdrop-blur-sm bg-opacity-95`}>
-        <div className="grid grid-cols-5 gap-1 p-2">
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'} border-t z-40 shadow-lg backdrop-blur-md`}>
+        <div className="grid grid-cols-5 gap-1 p-3">
           {bottomNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-300 ${
                   isActive
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105'
                     : darkMode
-                    ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300 hover:shadow-md'
+                    ? 'text-gray-400 hover:bg-gray-700/50 hover:text-gray-300 hover:shadow-md'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-700 hover:shadow-md'
                 }`}
               >
-                <item.icon size={18} />
-                <span className="text-sm md:text-base font-medium">{item.name}</span>
+                <item.icon size={20} className={`mb-1 ${isActive ? 'drop-shadow-sm' : ''}`} />
+                <span className="text-xs font-medium leading-tight">{item.name}</span>
               </NavLink>
             );
           })}

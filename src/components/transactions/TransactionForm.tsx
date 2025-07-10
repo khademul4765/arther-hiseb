@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { X, Users, Calendar as CalendarIcon, DollarSign, Phone, MapPin, FileText, Clock, Tag, User, ChevronDown, Wallet, CreditCard, Smartphone, Building } from 'lucide-react';
-import { Transaction } from '../../types';
+import { Transaction } from '../../types/index';
 import { CategorySelect } from '../common/CategorySelect';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
