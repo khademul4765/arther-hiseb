@@ -174,7 +174,7 @@ export const LoanManager: React.FC = () => {
                         শেষ তারিখ:
                       </span>
                       <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {format(new Date(loan.dueDate), 'dd MMM yyyy (dd/MM/yyyy)')}
+                        {format(new Date(loan.dueDate), 'dd MMM yyyy')}
                       </span>
                     </div>
                   )}
@@ -276,7 +276,7 @@ export const LoanManager: React.FC = () => {
                         শেষ তারিখ:
                       </span>
                       <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {format(new Date(loan.dueDate), 'dd MMM yyyy (dd/MM/yyyy)')}
+                        {format(new Date(loan.dueDate), 'dd MMM yyyy')}
                       </span>
                     </div>
                   )}

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { X, Users, Calendar, DollarSign, Phone, MapPin, FileText } from 'lucide-react';
+import ContactSelect from '../common/ContactSelect';
 
 interface LoanFormProps {
   onClose: () => void;
@@ -27,7 +28,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
   onSubmit,
   loan
 }) => {
-  const { addLoan, updateLoan, darkMode, user } = useStore();
+  const { addLoan, updateLoan, darkMode, user, contacts } = useStore();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     defaultValues: loan ? {
       type: loan.type,
@@ -47,6 +48,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({
 
   const date = watch('date');
   const duration = watch('duration');
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   // Auto-calculate due date when duration or date changes
   useEffect(() => {
@@ -71,25 +73,26 @@ export const LoanForm: React.FC<LoanFormProps> = ({
       alert('আপনি লগইন করেননি। দয়া করে লগইন করুন।');
       return;
     }
+    const contact = contacts.find(c => c.id === selectedContactId);
     const loanData: any = {
       ...data,
+      personName: contact ? contact.name : '',
+      personPhone: contact ? contact.phone : '',
+      personAddress: contact ? contact.address : '',
       date: new Date(data.date),
       note: data.note,
     };
     if (data.dueDate) {
       loanData.dueDate = new Date(data.dueDate);
     }
-    // Remove dueDate if not present
     if (!data.dueDate) {
       delete loanData.dueDate;
     }
-
     if (loan) {
       updateLoan(loan.id, loanData);
     } else {
       addLoan(loanData);
     }
-
     onSubmit();
   };
 
@@ -161,66 +164,19 @@ export const LoanForm: React.FC<LoanFormProps> = ({
             )}
           </div>
 
-          {/* Person Name */}
+          {/* Person Name/Phone/Address */}
           <div>
             <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               ব্যক্তি/ প্রতিষ্ঠানের নাম *
             </label>
             <div className="relative">
               <Users size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <input
-                type="text"
-                {...register('personName', { required: 'ব্যক্তি/ প্রতিষ্ঠানের নাম আবশ্যক' })}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="ব্যক্তি/ প্রতিষ্ঠানের নাম লিখুন"
-              />
-            </div>
-            {errors.personName && (
-              <p className="text-red-500 text-sm mt-1">{errors.personName.message}</p>
-            )}
-          </div>
-
-          {/* Person Phone */}
-          <div>
-            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              ফোন নম্বর
-            </label>
-            <div className="relative">
-              <Phone size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <input
-                type="tel"
-                {...register('personPhone')}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="ফোন নম্বর লিখুন"
-              />
-            </div>
-          </div>
-
-          {/* Person Address */}
-          <div>
-            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
-              ঠিকানা
-            </label>
-            <div className="relative">
-              <MapPin size={16} className={`absolute left-3 top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <input
-                type="text"
-                {...register('personAddress')}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-                placeholder="ঠিকানা লিখুন"
-              />
+              <div className="pl-10">
+                <ContactSelect
+                  value={selectedContactId}
+                  onChange={setSelectedContactId}
+                />
+              </div>
             </div>
           </div>
 

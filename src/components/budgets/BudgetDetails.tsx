@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
-import { X, TrendingUp, Calendar, DollarSign, Tag, ArrowDownRight, User, FileText } from 'lucide-react';
+import { X, TrendingUp, Calendar, Tag, List, Grid, CalendarRange, CalendarDays, Edit3, ArrowDownRight, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Budget, Category } from '../../types/index';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -14,13 +15,13 @@ interface BudgetDetailsProps {
 }
 
 export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { budgets, transactions, categories, darkMode } = useStore();
 
-  const budget = budgets.find(b => b.id === budgetId);
+  const budget = budgets.find(b => b.id === budgetId) as Budget | undefined;
   
-  const budgetData = useMemo(() => {
+  const budgetData = React.useMemo(() => {
     if (!budget) return null;
-
     // Get transactions for this budget's categories within the date range
     const budgetTransactions = transactions.filter(t => 
       t.type === 'expense' && 
@@ -28,22 +29,19 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
       new Date(t.date) >= new Date(budget.startDate) &&
       new Date(t.date) <= new Date(budget.endDate)
     );
-
     // Calculate spending per category
-    const categorySpending = (budget.categories || []).reduce((acc, categoryName) => {
+    const categorySpending: Record<string, { spent: number; transactions: typeof transactions; category: Category | undefined }> = (budget.categories || []).reduce((acc: Record<string, { spent: number; transactions: typeof transactions; category: Category | undefined }>, categoryName: string) => {
       const categoryTransactions = budgetTransactions.filter(t => t.category === categoryName);
       const spent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
       acc[categoryName] = {
         spent,
         transactions: categoryTransactions,
-        category: categories.find(c => c.name === categoryName)
+        category: categories.find(c => c.name === categoryName) as Category | undefined
       };
       return acc;
-    }, {} as Record<string, { spent: number; transactions: any[]; category: any }>);
-
+    }, {});
     const totalSpent = Object.values(categorySpending).reduce((sum, cat) => sum + cat.spent, 0);
     const percentage = (totalSpent / budget.amount) * 100;
-
     return {
       budget,
       categorySpending,
@@ -53,7 +51,7 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
     };
   }, [budget, transactions, categories]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -66,6 +64,20 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
   }
 
   const { budget: budgetInfo, categorySpending, totalSpent, percentage, allTransactions } = budgetData;
+
+  // Helper to convert English digits to Bengali
+  const toBengaliDigits = (str: string) => String(str).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[Number(d)]);
+  // Helper to format date in Bengali with month name
+  const formatBengaliDate = (dateObj: Date) => {
+    const months = [
+      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+    ];
+    const d = dateObj.getDate();
+    const m = dateObj.getMonth();
+    const y = dateObj.getFullYear();
+    return `${toBengaliDigits(d.toString().padStart(2, '0'))} ${months[m]} ${toBengaliDigits(y.toString())}`;
+  };
 
   // Chart data for category spending
   const chartData = {
@@ -147,19 +159,19 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                 <div className="flex justify-between">
                   <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>মোট বাজেট:</span>
                   <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ৳{budgetInfo.amount.toLocaleString()}
+                    {budgetInfo.amount.toLocaleString()} ৳
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>খরচ হয়েছে:</span>
                   <span className={`font-semibold ${totalSpent > budgetInfo.amount ? 'text-red-600' : 'text-green-600'}`}>
-                    ৳{totalSpent.toLocaleString()}
+                    {totalSpent.toLocaleString()} ৳
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>বাকি আছে:</span>
                   <span className={`font-semibold ${(budgetInfo.amount - totalSpent) < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                    ৳{(budgetInfo.amount - totalSpent).toLocaleString()}
+                    {(budgetInfo.amount - totalSpent).toLocaleString()} ৳
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -191,17 +203,20 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {format(new Date(budgetInfo.startDate), 'dd MMM yyyy (dd/MM/yyyy)')} - {format(new Date(budgetInfo.endDate), 'dd MMM yyyy (dd/MM/yyyy)')}
+                    {formatBengaliDate(new Date(budgetInfo.startDate))} - {formatBengaliDate(new Date(budgetInfo.endDate))}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {budgetInfo.period === 'weekly' && <CalendarDays size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />}
+                  {budgetInfo.period === 'monthly' && <CalendarRange size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />}
+                  {budgetInfo.period === 'yearly' && <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />}
+                  {budgetInfo.period === 'custom' && <Edit3 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />}
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {budgetInfo.period === 'weekly' ? 'সাপ্তাহিক' : budgetInfo.period === 'monthly' ? 'মাসিক' : budgetInfo.period === 'yearly' ? 'বার্ষিক' : 'কাস্টম'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Tag size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {budgetInfo.period === 'weekly' ? 'সাপ্তাহিক' : budgetInfo.period === 'monthly' ? 'মাসিক' : 'বার্ষিক'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <DollarSign size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {(budgetInfo.categories || []).length} টি ক্যাটেগরি
                   </span>
@@ -233,35 +248,26 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                 {(budgetInfo.categories || []).map(categoryName => {
                   const catData = categorySpending[categoryName];
                   const catPercentage = budgetInfo.amount > 0 ? (catData.spent / budgetInfo.amount) * 100 : 0;
-                  
                   return (
-                    <div key={categoryName} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div
+                      key={categoryName}
+                      className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'} cursor-pointer hover:ring-2 hover:ring-green-400 ${selectedCategory === categoryName ? 'ring-2 ring-green-500' : ''}`}
+                      onClick={() => setSelectedCategory(categoryName)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: catData.category?.color || '#6B7280' }}
-                          />
+                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: catData.category?.color || '#6B7280' }} />
                           <span className="text-xl">{catData.category?.icon || '💰'}</span>
-                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {categoryName}
-                          </span>
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{categoryName}</span>
                         </div>
                         <div className="text-right">
-                          <span className={`font-semibold ${catData.spent > 0 ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            ৳{catData.spent.toLocaleString()}
-                          </span>
-                          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {catData.transactions.length} টি লেনদেন
-                          </p>
+                          <span className={`font-semibold ${catData.spent > 0 ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{catData.spent.toLocaleString()} ৳</span>
+                          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{catData.transactions.length} টি লেনদেন</p>
                         </div>
                       </div>
                       {catData.spent > 0 && (
                         <div className={`w-full bg-gray-200 rounded-full h-2 ${darkMode ? 'bg-gray-600' : ''}`}>
-                          <div
-                            className="h-2 rounded-full bg-red-500"
-                            style={{ width: `${Math.min(catPercentage, 100)}%` }}
-                          />
+                          <div className="h-2 rounded-full bg-red-500" style={{ width: `${Math.min(catPercentage, 100)}%` }} />
                         </div>
                       )}
                     </div>
@@ -273,10 +279,12 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
             {/* Recent Transactions */}
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                সাম্প্রতিক লেনদেন ({allTransactions.length} টি)
+                {selectedCategory
+                  ? selectedCategory
+                  : `সাম্প্রতিক লেনদেন (${allTransactions.length} টি)`}
               </h3>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {allTransactions
+                {(selectedCategory ? allTransactions.filter(t => t.category === selectedCategory) : allTransactions)
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 20)
                   .map(transaction => {
@@ -287,38 +295,38 @@ export const BudgetDetails: React.FC<BudgetDetailsProps> = ({ budgetId, onClose 
                           <div className="flex items-center space-x-3">
                             <div className="text-xl">{category?.icon || '💰'}</div>
                             <div>
-                              <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {transaction.category}
-                              </p>
+                              <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{transaction.category}</p>
                               <div className="flex items-center space-x-2 text-sm">
-                                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                  {format(new Date(transaction.date), 'dd MMM yyyy (dd/MM/yyyy)')}
-                                </span>
+                                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{format(new Date(transaction.date), 'dd MMM yyyy')}</span>
                                 {transaction.person && (
                                   <>
                                     <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>•</span>
-                                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                      {transaction.person}
-                                    </span>
+                                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{transaction.person}</span>
                                   </>
                                 )}
                               </div>
                               {transaction.note && (
-                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
-                                  {transaction.note}
-                                </p>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>{transaction.note}</p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="text-lg font-bold text-red-600">
-                              -৳{transaction.amount.toLocaleString()}
-                            </span>
+                            <span className="text-lg font-bold text-red-600">-{transaction.amount.toLocaleString()} ৳</span>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                {selectedCategory && (
+                  <div className="text-center mt-2">
+                    <button
+                      className={`px-4 py-1 rounded bg-green-100 text-green-700 font-medium hover:bg-green-200 transition`}
+                      onClick={() => setSelectedCategory(null)}
+                    >
+                      সব লেনদেন দেখুন
+                    </button>
+                  </div>
+                )}
                 {allTransactions.length === 0 && (
                   <div className="text-center py-8">
                     <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>

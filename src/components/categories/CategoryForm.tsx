@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Tag, Palette } from 'lucide-react';
+import { X, Tag, Palette, PlusCircle, MinusCircle } from 'lucide-react';
 
 interface CategoryFormProps {
   onClose: () => void;
@@ -15,6 +15,8 @@ interface FormData {
   type: 'income' | 'expense';
   color: string;
   icon: string;
+  parentId?: string;
+  isSubcategory: boolean;
 }
 
 const colorOptions = [
@@ -39,11 +41,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       name: category.name,
       type: category.type,
       color: category.color,
-      icon: category.icon
+      icon: category.icon,
+      parentId: category.parentId,
+      isSubcategory: category.isSubcategory
     } : {
       type: 'expense',
       color: colorOptions[0],
-      icon: iconOptions[0]
+      icon: iconOptions[0],
+      isSubcategory: false
     }
   });
 
@@ -59,15 +64,23 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const selectedIcon = watch('icon');
   const selectedType = watch('type');
   const selectedName = watch('name');
+  const selectedIsSubcategory = watch('isSubcategory');
+  const selectedParentId = watch('parentId');
+
+  // Filter parent categories (only main categories, not subcategories)
+  const parentCategories = categories.filter(c => 
+    c.type === selectedType && !c.isSubcategory && c.id !== category?.id
+  );
 
   const onFormSubmit = (data: FormData) => {
     if (!user) return;
 
     // Check for duplicate categories (case-insensitive)
     const existingCategory = categories.find(c => 
-      c.userId === user.id &&
       c.name.toLowerCase() === data.name.toLowerCase() && 
       c.type === data.type &&
+      c.isSubcategory === data.isSubcategory &&
+      c.parentId === data.parentId &&
       c.id !== category?.id // Exclude current category when editing
     );
 
@@ -79,7 +92,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     if (category) {
       updateCategory(category.id, data);
     } else {
-      addCategory({ ...data, isDefault: false });
+      addCategory(data);
     }
     onSubmit();
   };
@@ -95,15 +108,15 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <h2 className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {category ? 'ক্যাটেগরি সম্পাদনা' : 'নতুন ক্যাটেগরি'}
           </h2>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}
           >
             <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
           </button>
@@ -124,11 +137,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   minLength: { value: 2, message: 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' },
                   maxLength: { value: 30, message: 'নাম সর্বোচ্চ ৩০ অক্ষরের হতে পারে' }
                 })}
-                className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
+                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border text-lg md:text-base ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
                 placeholder="ক্যাটেগরির নাম লিখুন"
               />
             </div>
@@ -139,21 +152,66 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
           {/* Type */}
           <div>
-            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               ধরন *
             </label>
-            <select
-              {...register('type', { required: 'ধরন নির্বাচন করুন' })}
-              className={`w-full px-3 py-2 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-            >
-              <option value="expense">খরচ</option>
-              <option value="income">আয়</option>
-            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${selectedType === 'expense' ? darkMode ? 'border-red-500 bg-red-900/20' : 'border-red-500 bg-red-50' : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}>
+                <input type="radio" value="expense" {...register('type', { required: 'ধরন নির্বাচন করুন' })} className="sr-only" />
+                <MinusCircle size={18} className={`mr-2 ${selectedType === 'expense' ? 'text-red-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <span className={`font-medium ${selectedType === 'expense' ? 'text-red-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>খরচ</span>
+              </label>
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${selectedType === 'income' ? darkMode ? 'border-green-500 bg-green-900/20' : 'border-green-500 bg-green-50' : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}>
+                <input type="radio" value="income" {...register('type', { required: 'ধরন নির্বাচন করুন' })} className="sr-only" />
+                <PlusCircle size={18} className={`mr-2 ${selectedType === 'income' ? 'text-green-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <span className={`font-medium ${selectedType === 'income' ? 'text-green-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>আয়</span>
+              </label>
+            </div>
           </div>
+
+          {/* Subcategory Selection */}
+          <div>
+            <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+              ক্যাটেগরি ধরন
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${!selectedIsSubcategory ? darkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50' : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}>
+                <input type="radio" value="false" {...register('isSubcategory')} className="sr-only" />
+                <span className={`font-medium ${!selectedIsSubcategory ? 'text-blue-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>মূল ক্যাটেগরি</span>
+              </label>
+              <label className={`flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${selectedIsSubcategory ? darkMode ? 'border-purple-500 bg-purple-900/20' : 'border-purple-500 bg-purple-50' : darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}>
+                <input type="radio" value="true" {...register('isSubcategory')} className="sr-only" />
+                <span className={`font-medium ${selectedIsSubcategory ? 'text-purple-600' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>উপ-ক্যাটেগরি</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Parent Category Selection (only for subcategories) */}
+          {selectedIsSubcategory && (
+            <div>
+              <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                মূল ক্যাটেগরি নির্বাচন করুন *
+              </label>
+              <select
+                {...register('parentId', { required: selectedIsSubcategory ? 'মূল ক্যাটেগরি নির্বাচন করুন' : false })}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+              >
+                <option value="">মূল ক্যাটেগরি নির্বাচন করুন</option>
+                {parentCategories.map((parentCat) => (
+                  <option key={parentCat.id} value={parentCat.id}>
+                    {parentCat.icon} {parentCat.name}
+                  </option>
+                ))}
+              </select>
+              {errors.parentId && (
+                <p className="text-red-500 text-sm mt-1">{errors.parentId.message}</p>
+              )}
+            </div>
+          )}
 
           {/* Color */}
           <div>
@@ -229,7 +287,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className={`flex-1 px-4 py-2 rounded-lg border ${
+              className={`flex-1 px-4 py-3 rounded-lg border font-medium transition-colors ${
                 darkMode 
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                   : 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -239,7 +297,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              className="flex-1 px-4 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
             >
               {category ? 'আপডেট করুন' : 'সংরক্ষণ করুন'}
             </button>

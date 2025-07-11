@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account } from '../types';
+import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account, Contact } from '../types';
 import { db } from '../config/firebase';
 import { collection, getDocs, query, where, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
@@ -16,6 +16,7 @@ interface StoreState {
   darkMode: boolean;
   isInitialized: boolean;
   enableNotifications: boolean;
+  contacts: Contact[];
   
   // Auth Actions
   setUser: (user: User | null) => Promise<void>;
@@ -45,7 +46,7 @@ interface StoreState {
   // Goal Actions
   addGoal: (goal: Omit<Goal, 'id' | 'userId' | 'createdAt'>) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
-  addToGoal: (goalId: string, amount: number, transactionId: string) => void;
+  addToGoal: (goalId: string, amount: number, transactionId: string, date?: string, note?: string) => void;
   deleteGoal: (id: string) => void;
   
   // Loan Actions
@@ -73,6 +74,9 @@ interface StoreState {
   recalculateAccountBalances: () => void;
   cleanupDuplicateCategories: (userId: string) => Promise<void>;
   deleteAllUserData: () => Promise<void>;
+  addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
+  updateContact: (id: string, updates: Partial<Contact>) => void;
+  deleteContact: (id: string) => void;
 }
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -112,6 +116,7 @@ export const useStore = create<StoreState>()(
       darkMode: false,
       isInitialized: false,
       enableNotifications: true,
+      contacts: [],
 
       // Auth Actions
       setUser: async (user) => {
@@ -958,19 +963,28 @@ export const useStore = create<StoreState>()(
         await deleteDoc(doc(db, 'goals', id));
       },
 
-      addToGoal: async (goalId, amount, transactionId) => {
+      addToGoal: async (goalId, amount, transactionId, date, note) => {
         const goal = get().goals.find(g => g.id === goalId);
         if (!goal) return;
         
         const addAmount = Number(amount);
         const newCurrentAmount = Number(goal.currentAmount) + addAmount;
         const isCompleted = newCurrentAmount >= Number(goal.targetAmount);
-        
+        const depositEntry = {
+          amount: addAmount,
+          date: date || new Date().toISOString(),
+          note: note || '',
+          transactionId: transactionId
+        };
         await updateDoc(doc(db, 'goals', goalId), {
           currentAmount: newCurrentAmount,
           transactionIds: [...goal.transactionIds, transactionId],
-          isCompleted
+          isCompleted,
+          depositHistory: [...(goal.depositHistory || []), depositEntry]
         });
+        
+        // Optionally, you could log date and note in a goal history array here
+        // For now, just accept and ignore them if not used
         
         if (isCompleted) {
           get().addNotification({
@@ -1260,6 +1274,27 @@ export const useStore = create<StoreState>()(
         // Clear local state
         get().clearUserData();
       },
+
+      addContact: (contact) => set((state) => ({
+        contacts: [
+          ...state.contacts,
+          {
+            ...contact,
+            id: Math.random().toString(36).slice(2),
+            createdAt: new Date(),
+          },
+        ],
+      })),
+
+      updateContact: (id, updates) => set((state) => ({
+        contacts: state.contacts.map((c) =>
+          c.id === id ? { ...c, ...updates } : c
+        ),
+      })),
+
+      deleteContact: (id) => set((state) => ({
+        contacts: state.contacts.filter((c) => c.id !== id),
+      })),
     }),
     {
       name: 'orther-hiseb-storage',

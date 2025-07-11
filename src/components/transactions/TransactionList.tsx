@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { TransactionForm } from './TransactionForm';
 import { TransactionItem } from './TransactionItem';
@@ -20,46 +20,7 @@ interface DatePickerHeaderProps {
   darkMode: boolean;
 }
 
-function DatePickerHeader({ date, changeYear, changeMonth, darkMode }: DatePickerHeaderProps) {
-  const years = Array.from({ length: 2100 - 2023 + 1 }, (_, i) => 2023 + i);
-  const months = [
-    "জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"
-  ];
-  return (
-    <div
-      className={`flex items-center justify-center gap-2 py-3 rounded-t-xl shadow-sm ${
-        darkMode ? 'bg-gray-800 border-b border-gray-700' : 'bg-green-50 border-b border-green-200'
-      }`}
-    >
-      <select
-        value={date.getFullYear()}
-        onChange={e => changeYear(Number(e.target.value))}
-        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
-          darkMode 
-            ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/20' 
-            : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20'
-        } focus:outline-none`}
-      >
-        {years.map(year => (
-          <option key={year} value={year}>{year.toLocaleString('bn-BD').replace(/,/g, '')}</option>
-        ))}
-      </select>
-      <select
-        value={date.getMonth()}
-        onChange={e => changeMonth(Number(e.target.value))}
-        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
-          darkMode 
-            ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/20' 
-            : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20'
-        } focus:outline-none`}
-      >
-        {months.map((month, idx) => (
-          <option key={month} value={idx}>{month}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
+import { DatePickerHeader, CustomCalendarContainer } from '../common/DatePickerHeader';
 
 interface CustomCalendarContainerProps {
   className?: string;
@@ -69,39 +30,7 @@ interface CustomCalendarContainerProps {
   darkMode: boolean;
 }
 
-function CustomCalendarContainer({ className = '', children, onToday, onClear, darkMode }: CustomCalendarContainerProps) {
-  return (
-    <div className={`${className} relative`}>
-      {children}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white to-transparent dark:from-gray-900 dark:to-transparent pt-8 pb-2">
-        <div className="flex justify-between px-3">
-          <button
-            type="button"
-            onClick={onClear}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              darkMode 
-                ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 hover:shadow-md' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:shadow-md'
-            }`}
-          >
-            মুছুন
-          </button>
-          <button
-            type="button"
-            onClick={onToday}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              darkMode 
-                ? 'bg-green-700 text-white hover:bg-green-600 hover:shadow-md' 
-                : 'bg-green-500 text-white hover:bg-green-600 hover:shadow-md'
-            }`}
-          >
-            আজ
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 // Helper for Bengali type label
 function getTypeLabel(type: 'income' | 'expense' | 'transfer') {
@@ -139,10 +68,30 @@ export const TransactionList: React.FC = () => {
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
   const undoTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Refs for date pickers
   const startDatePickerRef = useRef<any>(null);
   const endDatePickerRef = useRef<any>(null);
+
+  // Filter categories based on selected type
+  const filteredCategories = useMemo(() => {
+    if (!filterType) {
+      // If no type is selected, show all categories except transfer
+      return categories.filter(cat => cat.name !== 'ট্রান্সফার');
+    } else if (filterType === 'transfer') {
+      // If transfer is selected, only show transfer category
+      return categories.filter(cat => cat.name === 'ট্রান্সফার');
+    } else {
+      // If income or expense is selected, show only categories of that type
+      return categories.filter(cat => cat.type === filterType && cat.name !== 'ট্রান্সফার');
+    }
+  }, [categories, filterType]);
+
+  // Reset category filter when type changes
+  useEffect(() => {
+    setFilterCategory('');
+  }, [filterType]);
 
   // Filter transactions by date range
   const filteredTransactions = transactions.filter(transaction => {
@@ -222,12 +171,13 @@ export const TransactionList: React.FC = () => {
   const handleSelect = (id: string) => {
     setSelectedTransactions((prev) => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
   };
-  const handleSelectAll = (ids: string[]) => {
-    setSelectedTransactions(ids);
-  };
-  const handleDeselectAll = () => {
-    setSelectedTransactions([]);
-  };
+  function handleSelectAll(ids: string[]) {
+    setSelectedTransactions(prev => Array.from(new Set([...prev, ...ids])));
+  }
+
+  function handleDeselectAll(ids: string[]) {
+    setSelectedTransactions(prev => prev.filter(id => !ids.includes(id)));
+  }
   function formatTime12h(time: string) {
     if (!time) return '';
     const [h, m] = time.split(':');
@@ -238,9 +188,8 @@ export const TransactionList: React.FC = () => {
     if (hour === 0) hour = 12;
     return `${hour}:${minute} ${ampm}`;
   }
-  const handleDelete = () => {
+  function handleDelete() {
     if (selectedTransactions.length === 0) return;
-    if (!window.confirm('নির্বাচিত লেনদেনগুলো মুছে ফেলতে চান?')) return;
     setPendingDelete(selectedTransactions);
     setToast({
       message: `লেনদেন মুছে ফেলা হয়েছে (${selectedTransactions.length})`,
@@ -265,21 +214,33 @@ export const TransactionList: React.FC = () => {
     setToast(null);
     setPendingDelete(null);
   };
-  const totalSelectedAmount = sortedTransactions.filter(t => selectedTransactions.includes(t.id)).reduce((sum, t) => {
-    switch (t.type) {
-      case 'expense':
-        return sum - t.amount;
-      case 'income':
-        return sum + t.amount;
-      default:
-        return sum;
-    }
-  }, 0);
+  // Calculate total income and total expenses for selected transactions
+  const selectedIncome = transactions
+    .filter(t => selectedTransactions.includes(t.id) && t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const selectedExpense = transactions
+    .filter(t => selectedTransactions.includes(t.id) && t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   function handlePrintTransactions() {
     // TODO: Implement transaction print/export logic
     alert('Print/export feature coming soon!');
   }
+
+  // Format the date to always show two digits for the day in Bengali numerals
+  const formatBengaliDate = (dateString: string) => {
+    const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+    const parts = dateString.split(' ');
+    if (parts.length === 3) {
+      let day = parts[0];
+      if (day.length === 1) day = '0' + day;
+      // Convert each digit to Bengali
+      day = day.replace(/\d/g, d => bnDigits[parseInt(d)]);
+      return `${day} ${parts[1]} ${parts[2]}`;
+    }
+    return dateString;
+  };
 
   return (
     <div className="space-y-6">
@@ -393,9 +354,7 @@ export const TransactionList: React.FC = () => {
               <CategorySelect
                 value={filterCategory}
                 onChange={setFilterCategory}
-                options={categories
-                  .filter(cat => cat.name !== 'ট্রান্সফার')
-                  .map(cat => ({ value: cat.name, label: `${cat.icon} ${cat.name}` }))}
+                options={filteredCategories.map(cat => ({ value: cat.name, label: `${cat.icon} ${cat.name}` }))}
                 placeholder="সব ক্যাটেগরি"
                 disabled={false}
                 showSearch={false}
@@ -434,7 +393,7 @@ export const TransactionList: React.FC = () => {
                 isClearable
                 showPopperArrow={false}
                 renderCustomHeader={props => (
-                  <DatePickerHeader {...props} darkMode={darkMode} />
+                  <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={startDatePickerRef} />
                 )}
                 calendarContainer={props => (
                   <CustomCalendarContainer
@@ -489,7 +448,7 @@ export const TransactionList: React.FC = () => {
                 isClearable
                 showPopperArrow={false}
                 renderCustomHeader={props => (
-                  <DatePickerHeader {...props} darkMode={darkMode} />
+                  <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={startDatePickerRef} />
                 )}
                 calendarContainer={props => (
                   <CustomCalendarContainer
@@ -536,14 +495,30 @@ export const TransactionList: React.FC = () => {
 
       {/* Selection summary bar */}
       {selectedTransactions.length > 0 && (
-        <div className={`flex flex-wrap items-center justify-between mb-4 p-4 rounded-xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border shadow`}> 
-          <div className="flex items-center gap-4">
-            <span className="font-bold">নির্বাচিত: {selectedTransactions.length}</span>
-            <span className="font-bold">মোট: {totalSelectedAmount.toLocaleString()} ৳</span>
+        <div
+          className={`
+            fixed bottom-6 left-1/2 transform -translate-x-1/2
+            flex items-center justify-between
+            p-4 rounded-xl border shadow
+            z-50
+            ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
+            w-[calc(100vw-32px)] max-w-4xl
+          `}
+          style={{ minWidth: 320 }}
+        >
+          {/* Left: Selected count */}
+          <div className="flex items-center">
+            <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>নির্বাচিত: {selectedTransactions.length}</span>
           </div>
+          {/* Center: Totals */}
+          <div className="flex items-center gap-4">
+            <span className={`font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>মোট আয়: {selectedIncome.toLocaleString()} ৳</span>
+            <span className={`font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>মোট খরচ: {selectedExpense.toLocaleString()} ৳</span>
+          </div>
+          {/* Right: Action buttons */}
           <div className="flex items-center gap-2">
-            <button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">মুছে ফেলুন</button>
-            <button onClick={handleDeselectAll} className="px-4 py-2 rounded-lg bg-gray-400 text-white hover:bg-gray-500">সব বাতিল করুন</button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">মুছে ফেলুন</button>
+            <button onClick={() => handleDeselectAll(selectedTransactions)} className="px-4 py-2 rounded-lg bg-gray-400 text-white hover:bg-gray-500">সব বাতিল করুন</button>
           </div>
         </div>
       )}
@@ -560,16 +535,27 @@ export const TransactionList: React.FC = () => {
         ) : (
           sortedDateKeys.map((date) => (
             <div key={date}>
-              <div className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{date}</div>
+              <div className="flex items-start justify-between mb-2">
+                <div className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatBengaliDate(date)}</div>
+                <div className="flex flex-col items-end text-right">
+                  <span className={`font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>দিনের মোট আয়: {groupedTransactions[date].filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0).toLocaleString()} ৳</span>
+                  <span className={`font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>দিনের মোট খরচ: {groupedTransactions[date].filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0).toLocaleString()} ৳</span>
+                </div>
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center mb-2">
-                  <input
-                    type="checkbox"
+                  <ThemedCheckbox
                     checked={groupedTransactions[date].every(t => selectedTransactions.includes(t.id))}
-                    onChange={e => e.target.checked ? handleSelectAll(groupedTransactions[date].map(t => t.id)) : handleDeselectAll()}
-                    className="mr-2"
+                    onChange={e =>
+                      e.target.checked
+                        ? handleSelectAll(groupedTransactions[date].map(t => t.id))
+                        : handleDeselectAll(groupedTransactions[date].map(t => t.id))
+                    }
+                    label="সব নির্বাচন করুন"
+                    disabled={false}
+                    className="text-sm"
+                    size={16}
                   />
-                  <span className="text-sm">সব নির্বাচন করুন</span>
                 </div>
                 {groupedTransactions[date].map((transaction, index) => (
                   <div key={transaction.id} className="flex items-center">
@@ -613,6 +599,31 @@ export const TransactionList: React.FC = () => {
               Undo
             </button>
           )}
+        </div>
+      )}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className={`rounded-xl p-8 max-w-sm w-full shadow-lg ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <h2 className="text-xl font-bold mb-4">নিশ্চিত?</h2>
+            <p className="mb-6">আপনি কি নির্বাচিত লেনদেনগুলো মুছে ফেলতে চান?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className={`px-4 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+              >
+                বাতিল
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  handleDelete();
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                নিশ্চিত করুন
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

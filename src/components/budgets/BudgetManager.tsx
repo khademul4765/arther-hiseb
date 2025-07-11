@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { BudgetForm } from './BudgetForm';
 import { BudgetDetails } from './BudgetDetails';
+import { Budget } from '../../types/index';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { format } from 'date-fns';
@@ -10,14 +11,28 @@ import { ThemedCheckbox } from '../common/ThemedCheckbox';
 export const BudgetManager: React.FC = () => {
   const { budgets, transactions, deleteBudget, darkMode } = useStore();
   const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState<any>(null);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const undoTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const handleEdit = (budget: any) => {
+  // Helper to convert English digits to Bengali
+  const toBengaliDigits = (str: string) => String(str).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[Number(d)]);
+  // Helper to format date in Bengali with month name
+  const formatBengaliDate = (dateObj: Date) => {
+    const months = [
+      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+    ];
+    const d = dateObj.getDate();
+    const m = dateObj.getMonth();
+    const y = dateObj.getFullYear();
+    return `${toBengaliDigits(d.toString().padStart(2, '0'))} ${months[m]} ${toBengaliDigits(y.toString())}`;
+  };
+
+  const handleEdit = (budget: Budget) => {
     setEditingBudget(budget);
     setShowForm(true);
   };
@@ -52,10 +67,9 @@ export const BudgetManager: React.FC = () => {
     setEditingBudget(null);
   };
 
-  const getBudgetStatus = (budget: any) => {
+  const getBudgetStatus = (budget: Budget) => {
     const spentAmount = budget.spent || 0;
     const percentage = (spentAmount / budget.amount) * 100;
-
     if (percentage >= 90) return { status: 'danger', icon: AlertTriangle, color: 'text-red-600', bgColor: 'bg-red-100' };
     if (percentage >= 75) return { status: 'warning', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
     return { status: 'safe', icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100' };
@@ -82,25 +96,28 @@ export const BudgetManager: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {budgets.map((budget) => {
+        {budgets.map((budget: Budget) => {
           const spentAmount = budget.spent || 0;
           const percentage = Math.min((spentAmount / budget.amount) * 100, 100);
           const { status, icon: Icon, color, bgColor } = getBudgetStatus(budget);
-
           return (
             <motion.div
               key={budget.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-md transition-shadow`}
+              className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer hover:ring-2 hover:ring-green-400`}
+              onClick={e => {
+                // Prevent click if edit/delete/details button is clicked
+                const target = e.target as HTMLElement;
+                if (target.closest('button')) return;
+                setShowDetails(budget.id);
+              }}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <TrendingUp size={20} className="text-blue-600" />
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {budget.name}
-                  </h3>
+                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{budget.name}</h3>
                 </div>
                 <div className="flex items-center space-x-2">
                   <motion.button
@@ -186,7 +203,7 @@ export const BudgetManager: React.FC = () => {
                       খরচ হয়েছে
                     </p>
                     <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ৳{spentAmount.toLocaleString()}
+                      {spentAmount.toLocaleString()} ৳
                     </p>
                   </div>
                   <div className="text-right">
@@ -194,13 +211,13 @@ export const BudgetManager: React.FC = () => {
                       বাজেট
                     </p>
                     <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ৳{budget.amount.toLocaleString()}
+                      {budget.amount.toLocaleString()} ৳
                     </p>
                   </div>
                 </div>
 
                 <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {format(new Date(budget.startDate), 'dd MMM yyyy (dd/MM/yyyy)')} - {format(new Date(budget.endDate), 'dd MMM yyyy (dd/MM/yyyy)')}
+                  {formatBengaliDate(new Date(budget.startDate))} - {formatBengaliDate(new Date(budget.endDate))}
                 </div>
               </div>
             </motion.div>

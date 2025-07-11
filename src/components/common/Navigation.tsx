@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Settings, Building2, Tag } from 'lucide-react';
+import { Home, CreditCard, Target, Users, Receipt, User, Wallet, TrendingUp, Settings, Building2, Tag, Handshake } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemedCheckbox } from './ThemedCheckbox';
 
@@ -25,7 +25,8 @@ const navigationItems = [
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
   { path: '/budgets', name: 'বাজেট', icon: TrendingUp },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
-  { path: '/loans', name: 'ঋণ ও পাওনা', icon: Users },
+  { path: '/loans', name: 'ঋণ ও পাওনা', icon: Handshake },
+  { path: '/contacts', name: 'ব্যক্তি ও প্রতিষ্ঠান', icon: Users },
   { path: '/reports', name: 'রিপোর্ট', icon: MinimalDocumentIcon },
   { path: '/categories', name: 'ক্যাটেগরি', icon: Tag },
   { path: '/profile', name: 'প্রোফাইল', icon: User },

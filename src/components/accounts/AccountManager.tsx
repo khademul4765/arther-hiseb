@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
@@ -7,7 +7,7 @@ import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone, Rot
 import { TransactionItem } from '../transactions/TransactionItem';
 import { CategorySelect } from '../common/CategorySelect';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
-import { Account } from '../../types';
+import { Account } from '../../types/index';
 import ReactDatePicker from 'react-datepicker';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { bn } from 'date-fns/locale';
@@ -187,6 +187,25 @@ export const AccountManager: React.FC = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Filter categories based on selected type
+  const filteredCategories = useMemo(() => {
+    if (!filterType) {
+      // If no type is selected, show all categories except transfer
+      return categories.filter(cat => cat.name !== 'ট্রান্সফার');
+    } else if (filterType === 'transfer') {
+      // If transfer is selected, only show transfer category
+      return categories.filter(cat => cat.name === 'ট্রান্সফার');
+    } else {
+      // If income or expense is selected, show only categories of that type
+      return categories.filter(cat => cat.type === filterType && cat.name !== 'ট্রান্সফার');
+    }
+  }, [categories, filterType]);
+
+  // Reset category filter when type changes
+  useEffect(() => {
+    setFilterCategory('');
+  }, [filterType]);
 
   // Remove defaultAccountId state and useEffect
 
@@ -640,9 +659,7 @@ export const AccountManager: React.FC = () => {
               <CategorySelect
                 value={filterCategory}
                 onChange={setFilterCategory}
-                      options={categories
-                        .filter(cat => cat.name !== 'ট্রান্সফার')
-                        .map(cat => ({ value: cat.name, label: `${cat.icon} ${cat.name}` }))}
+                      options={filteredCategories.map(cat => ({ value: cat.name, label: `${cat.icon} ${cat.name}` }))}
                       placeholder="সব ক্যাটেগরি"
                 disabled={false}
                       showSearch={false}

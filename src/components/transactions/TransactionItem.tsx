@@ -253,7 +253,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/80 shadow-lg border-4 border-green-500">
                 <Info size={28} className="text-green-600 dark:text-green-300" />
               </div>
-              <h2 className="text-xl font-extrabold text-green-900 dark:text-green-100 tracking-tight flex-1 text-center">লেনদেনের বিস্তারিত</h2>
+              <h2 className="text-xl font-extrabold tracking-tight flex-1 text-center" style={{ color: '#131A29' }}>লেনদেনের বিস্তারিত</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -266,7 +266,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
                 </button>
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="p-2 rounded-lg transition text-green-900 dark:text-green-100 hover:bg-green-50 dark:hover:bg-green-900 hover:text-green-600 focus:outline-none"
+                  className="p-2 rounded-lg transition hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 focus:outline-none font-bold text-lg"
+                  style={{ color: '#131A29' }}
                   title="বন্ধ করুন"
                 >
                   ✕

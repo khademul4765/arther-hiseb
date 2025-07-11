@@ -22,6 +22,7 @@ export interface Transaction {
   amount: number;
   type: 'income' | 'expense' | 'transfer';
   category: string;
+  subcategory?: string; // For subcategories
   accountId: string;
   toAccountId?: string; // For transfers
   date: Date;
@@ -42,6 +43,8 @@ export interface Category {
   icon: string;
   type: 'income' | 'expense';
   isDefault: boolean;
+  parentId?: string; // For subcategories
+  isSubcategory: boolean;
   createdAt: Date;
 }
 
@@ -70,6 +73,12 @@ export interface Goal {
   transactionIds: string[];
   isCompleted: boolean;
   createdAt: Date;
+  depositHistory?: Array<{
+    amount: number;
+    date: string;
+    note?: string;
+    transactionId: string;
+  }>;
 }
 
 export interface Loan {
@@ -106,5 +115,15 @@ export interface Notification {
   type: 'budget' | 'goal' | 'loan' | 'insight';
   priority: 'low' | 'medium' | 'high';
   isRead: boolean;
+  createdAt: Date;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  type: 'person' | 'organization';
+  phone?: string;
+  email?: string;
+  address?: string;
   createdAt: Date;
 }

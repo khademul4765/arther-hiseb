@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Users, Calendar as CalendarIcon, DollarSign, Phone, MapPin, FileText, Clock, Tag, User, ChevronDown, Wallet, CreditCard, Smartphone, Building } from 'lucide-react';
 import { Transaction } from '../../types/index';
 import { CategorySelect } from '../common/CategorySelect';
+import { DatePickerHeader, CustomCalendarContainer } from '../common/DatePickerHeader';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { bn } from 'date-fns/locale';
@@ -12,6 +13,7 @@ import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { AnalogClockTimePicker } from './AnalogClockTimePicker';
 import ReactDOM from 'react-dom';
+import ContactSelect from '../common/ContactSelect';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -69,19 +71,7 @@ function CalendarFooter({ onToday, onClear, darkMode }) {
   );
 }
 
-// Add a custom calendar container for react-datepicker
-function CustomCalendarContainer({ className, children, onToday, onClear, darkMode }) {
-  return (
-    <div className={className + ' relative'}>
-      {children}
-      <div className="absolute bottom-0 left-0 w-full flex pointer-events-none">
-        <div className="pointer-events-auto w-full">
-          <CalendarFooter onToday={onToday} onClear={onClear} darkMode={darkMode} />
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 // Custom dropdown for calendar (like CategorySelect)
 function CustomDropdown({ value, options, onChange, width = 110, darkMode }) {
@@ -160,7 +150,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   transaction,
   defaultType = 'expense'
 }) => {
-  const { addTransaction, updateTransaction, categories, accounts, darkMode } = useStore();
+  const { addTransaction, updateTransaction, categories, accounts, darkMode, contacts } = useStore();
   const defaultCashAccount = accounts.find(a => a.type === 'cash' && a.isDefault);
 
   const [recentDates, setRecentDates] = useState(getRecentDates());
@@ -172,6 +162,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [showClock, setShowClock] = useState(false);
   const timeInputRef = useRef(null);
   const clockModalRef = useRef(null);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<FormData>({
     defaultValues: transaction ? {
@@ -223,8 +214,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const onFormSubmit = (data: FormData) => {
     addRecentDate(data.date);
+    const contact = contacts.find(c => c.id === selectedContactId);
     const transactionData = {
       ...data,
+      person: contact ? contact.name : '',
       date: new Date(data.date),
       tags: data.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
     };
@@ -263,129 +256,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const [customYear, setCustomYear] = React.useState('');
-  const [showYearInput, setShowYearInput] = React.useState(false);
-  const [selectedYear, setSelectedYear] = React.useState<number | 'custom'>(new Date().getFullYear());
-  const [yearError, setYearError] = React.useState('');
 
-  // On mount, set customYear to the current year
-  React.useEffect(() => {
-    setCustomYear(new Date().getFullYear().toString());
-  }, []);
 
-  // Remove the always-on input, restore dropdown+custom input pattern
-  function DatePickerHeader({ date, changeYear, changeMonth, darkMode }) {
-    // Change year range to 2023-2100
-    const years = Array.from({ length: 2100 - 2023 + 1 }, (_, i) => 2023 + i);
-    const months = [
-      "জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"
-    ];
-    // Add custom year to options if needed
-    let yearOptions = years.map(year => ({ value: year.toString(), label: year.toLocaleString('bn-BD').replace(/,/g, '') }));
-    if (
-      selectedYear !== 'custom' &&
-      typeof selectedYear === 'number' &&
-      !years.includes(selectedYear)
-    ) {
-      yearOptions.push({ value: selectedYear.toString(), label: selectedYear.toLocaleString('bn-BD').replace(/,/g, '') });
-    }
-    yearOptions.push({ value: 'custom', label: 'লিখুন' });
-    // Determine what to show as selected
-    const currentYear = (showYearInput ? 'custom' : (selectedYear || date.getFullYear())).toString();
-    const handleCustomYearConfirm = () => {
-      if (customYear && customYear.length === 4 && !isNaN(Number(customYear)) && Number(customYear) > 1900 && Number(customYear) < 3000) {
-        setShowYearInput(false);
-        setSelectedYear(Number(customYear));
-        changeYear(Number(customYear));
-        setYearError('');
-        // Force calendar to show correct year
-        if (datePickerRef.current && datePickerRef.current.setPreSelection) {
-          const newDate = new Date(Number(customYear), date.getMonth(), 1);
-          datePickerRef.current.setPreSelection(newDate);
-        }
-      } else {
-        setYearError('সঠিক বছর লিখুন');
-      }
-    };
-    return (
-      <div
-        className="flex items-center justify-center gap-2 py-3 rounded-t-xl shadow-sm"
-        style={{ background: darkMode ? '#18181b' : '#FCFFFD' }}
-      >
-        <div className="w-[90px]">
-          {!showYearInput ? (
-            <CategorySelect
-              value={currentYear}
-              onChange={val => {
-                if (val === 'custom') {
-                  setShowYearInput(true);
-                  setTimeout(() => {
-                    const input = document.getElementById('custom-year-input');
-                    if (input) input.focus();
-                  }, 50);
-                } else {
-                  setShowYearInput(false);
-                  setSelectedYear(Number(val));
-                  changeYear(Number(val));
-                  setYearError('');
-                  // Force calendar to show correct year
-                  if (datePickerRef.current && datePickerRef.current.setPreSelection) {
-                    const newDate = new Date(Number(val), date.getMonth(), 1);
-                    datePickerRef.current.setPreSelection(newDate);
-                  }
-                }
-              }}
-              dropdownProps={{ onMouseDown: e => e.stopPropagation(), onPointerDown: e => e.stopPropagation() }}
-              options={yearOptions}
-              placeholder="বছর"
-              disabled={false}
-              showSearch={false}
-            />
-          ) : (
-            <div className="relative">
-              <input
-                id="custom-year-input"
-                type="number"
-                className="w-full px-3 py-2 rounded-lg border text-center text-base font-bengali focus:ring-2 focus:ring-green-400 focus:border-green-400 shadow transition bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:outline-none"
-                placeholder="লিখুন"
-                value={customYear}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setCustomYear(val);
-                  setYearError('');
-                }}
-                onBlur={handleCustomYearConfirm}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleCustomYearConfirm();
-                }}
-                onMouseDown={e => e.stopPropagation()}
-                onPointerDown={e => e.stopPropagation()}
-              />
-              {yearError && <div className="text-red-500 text-xs mt-1 text-center">{yearError}</div>}
-            </div>
-          )}
-        </div>
-        <div className="w-[110px]">
-          <CategorySelect
-            value={date.getMonth().toString()}
-            onChange={val => {
-              changeMonth(Number(val));
-              // Force calendar to show correct month
-              if (datePickerRef.current && datePickerRef.current.setPreSelection) {
-                const newDate = new Date(date.getFullYear(), Number(val), 1);
-                datePickerRef.current.setPreSelection(newDate);
-              }
-            }}
-            dropdownProps={{ onMouseDown: e => e.stopPropagation(), onPointerDown: e => e.stopPropagation() }}
-            options={months.map((month, idx) => ({ value: idx.toString(), label: month }))}
-            placeholder="মাস"
-            disabled={false}
-            showSearch={false}
-          />
-        </div>
-      </div>
-    );
-  }
+
 
   const handleClockClose = (e: MouseEvent) => {
     if (
@@ -526,7 +399,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   popperPlacement="bottom-start"
                   isClearable
                   renderCustomHeader={(props) => (
-                    <DatePickerHeader {...props} darkMode={darkMode} />
+                    <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={datePickerRef} />
                   )}
                   calendarContainer={(props) => (
                     <CustomCalendarContainer
@@ -596,12 +469,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>ব্যক্তি / প্রতিষ্ঠান</label>
             <div className="relative">
               <Users size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <input
-                type="text"
-                {...register('person')}
-                className={`w-full pl-10 pr-3 py-3 md:py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
-                placeholder="ব্যক্তি/ প্রতিষ্ঠানের নাম"
-              />
+              <div className="pl-10">
+                <ContactSelect
+                  value={selectedContactId}
+                  onChange={setSelectedContactId}
+                />
+              </div>
             </div>
           </div>
           {/* Note */}

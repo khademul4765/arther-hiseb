@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './config/firebase';
@@ -16,6 +16,54 @@ import { LoanManager } from './components/loans/LoanManager';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { AccountPage } from './components/account/AccountPage';
+import { ContactManager } from './components/contacts/ContactManager';
+
+// Custom hook to update page title
+const usePageTitle = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    const pathToTitle: Record<string, string> = {
+      '/': 'ড্যাশবোর্ড - অর্থের হিসেব',
+      '/accounts': 'অ্যাকাউন্ট - অর্থের হিসেব',
+      '/transactions': 'লেনদেন - অর্থের হিসেব',
+      '/categories': 'ক্যাটেগরি - অর্থের হিসেব',
+      '/budgets': 'বাজেট - অর্থের হিসেব',
+      '/goals': 'লক্ষ্য - অর্থের হিসেব',
+      '/loans': 'ঋণ ও পাওনা - অর্থের হিসেব',
+      '/contacts': 'যোগাযোগ - অর্থের হিসেব',
+      '/reports': 'রিপোর্ট - অর্থের হিসেব',
+      '/settings': 'সেটিংস - অর্থের হিসেব',
+      '/profile': 'প্রোফাইল - অর্থের হিসেব'
+    };
+    
+    const title = pathToTitle[location.pathname] || 'অর্থের হিসেব';
+    document.title = title;
+  }, [location.pathname]);
+};
+
+// Wrapper component to use the hook
+const AppContent = () => {
+  usePageTitle();
+  
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/accounts" element={<AccountManager />} />
+        <Route path="/transactions" element={<TransactionList />} />
+        <Route path="/categories" element={<CategoryManager />} />
+        <Route path="/budgets" element={<BudgetManager />} />
+        <Route path="/goals" element={<GoalManager />} />
+        <Route path="/loans" element={<LoanManager />} />
+        <Route path="/contacts" element={<ContactManager />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={<AccountPage />} />
+      </Routes>
+    </Layout>
+  );
+};
 
 function App() {
   const { user, setUser, darkMode } = useStore();
@@ -65,20 +113,7 @@ function App() {
   return (
     <Router>
       <div>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/accounts" element={<AccountManager />} />
-            <Route path="/transactions" element={<TransactionList />} />
-            <Route path="/categories" element={<CategoryManager />} />
-            <Route path="/budgets" element={<BudgetManager />} />
-            <Route path="/goals" element={<GoalManager />} />
-            <Route path="/loans" element={<LoanManager />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/profile" element={<AccountPage />} />
-          </Routes>
-        </Layout>
+        <AppContent />
       </div>
     </Router>
   );
