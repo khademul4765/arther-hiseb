@@ -1,21 +1,36 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { CategoryForm } from './CategoryForm';
+import { SubcategoryForm } from './SubcategoryForm';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tag, ChevronDown, ChevronRight, FolderOpen, Folder } from 'lucide-react';
 
 export const CategoryManager: React.FC = () => {
   const { categories, deleteCategory, darkMode, user } = useStore();
   const [showForm, setShowForm] = useState(false);
+  const [showSubcategoryForm, setShowSubcategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingSubcategory, setEditingSubcategory] = useState<any>(null);
+  const [selectedParentCategory, setSelectedParentCategory] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; action?: () => void } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const undoTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleEdit = (category: any) => {
     setEditingCategory(category);
     setShowForm(true);
+  };
+
+  const handleEditSubcategory = (subcategory: any) => {
+    setEditingSubcategory(subcategory);
+    setShowSubcategoryForm(true);
+  };
+
+  const handleAddSubcategory = (parentCategory: any) => {
+    setSelectedParentCategory(parentCategory);
+    setShowSubcategoryForm(true);
   };
 
   const handleDelete = (id: string) => {
@@ -48,6 +63,24 @@ export const CategoryManager: React.FC = () => {
     setEditingCategory(null);
   };
 
+  const handleCloseSubcategoryForm = () => {
+    setShowSubcategoryForm(false);
+    setEditingSubcategory(null);
+    setSelectedParentCategory(null);
+  };
+
+  const toggleExpanded = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
   // Filter categories to only show current user's categories and remove duplicates
   const userCategories = useMemo(() => {
     if (!user) return [];
@@ -58,7 +91,9 @@ export const CategoryManager: React.FC = () => {
     const uniqueCategories = filteredCategories.reduce((acc, current) => {
       const existing = acc.find(cat => 
         cat.name.toLowerCase() === current.name.toLowerCase() && 
-        cat.type === current.type
+        cat.type === current.type &&
+        cat.isSubcategory === current.isSubcategory &&
+        cat.parentId === current.parentId
       );
       
       if (!existing) {
@@ -83,8 +118,127 @@ export const CategoryManager: React.FC = () => {
     return uniqueCategories;
   }, [categories, user]);
 
-  const expenseCategories = userCategories.filter(c => c.type === 'expense');
-  const incomeCategories = userCategories.filter(c => c.type === 'income');
+  // Separate main categories and subcategories
+  const mainCategories = userCategories.filter(c => !c.isSubcategory);
+  const subcategories = userCategories.filter(c => c.isSubcategory);
+
+  // Group subcategories by parent
+  const subcategoriesByParent = useMemo(() => {
+    const grouped: { [parentId: string]: typeof subcategories } = {};
+    subcategories.forEach(sub => {
+      if (!grouped[sub.parentId!]) {
+        grouped[sub.parentId!] = [];
+      }
+      grouped[sub.parentId!].push(sub);
+    });
+    return grouped;
+  }, [subcategories]);
+
+  const expenseCategories = mainCategories.filter(c => c.type === 'expense');
+  const incomeCategories = mainCategories.filter(c => c.type === 'income');
+
+  const renderCategoryItem = (category: any, isSubcategory = false, parentId?: string) => {
+    const categorySubcategories = subcategoriesByParent[category.id] || [];
+    const hasSubcategories = categorySubcategories.length > 0;
+    const isExpanded = expandedCategories.has(category.id);
+
+    return (
+      <div key={category.id}>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className={`flex items-center justify-between p-3 rounded-lg ${
+            darkMode ? 'bg-gray-700' : 'bg-gray-50'
+          } ${isSubcategory ? 'ml-6 border-l-2 border-green-500' : ''}`}
+        >
+          <div className="flex items-center space-x-3">
+            {hasSubcategories && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => toggleExpanded(category.id)}
+                className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
+              >
+                {isExpanded ? (
+                  <ChevronDown size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                ) : (
+                  <ChevronRight size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                )}
+              </motion.button>
+            )}
+            {!hasSubcategories && isSubcategory && (
+              <div className="w-6" /> // Spacer for alignment
+            )}
+            <div 
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            <span className="text-2xl">{category.icon}</span>
+            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              {category.name}
+            </span>
+            {category.isDefault && (
+              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
+                ডিফল্ট
+              </span>
+            )}
+            {isSubcategory && (
+              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-blue-600 text-blue-200' : 'bg-blue-100 text-blue-700'}`}>
+                সাবক্যাটেগরি
+              </span>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {!isSubcategory && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleAddSubcategory(category)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
+                title="সাবক্যাটেগরি যোগ করুন"
+              >
+                <Plus size={16} className={darkMode ? 'text-green-400' : 'text-green-600'} />
+              </motion.button>
+            )}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => isSubcategory ? handleEditSubcategory(category) : handleEdit(category)}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
+            >
+              <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+            </motion.button>
+            {!category.isDefault && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowDeleteConfirm(category.id)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
+              >
+                <Trash2 size={16} className="text-red-500" />
+              </motion.button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Subcategories */}
+        {hasSubcategories && isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-2 space-y-2"
+          >
+            {categorySubcategories.map((subcategory) => 
+              renderCategoryItem(subcategory, true, category.id)
+            )}
+          </motion.div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -119,51 +273,7 @@ export const CategoryManager: React.FC = () => {
             খরচের ক্যাটেগরি ({expenseCategories.length})
           </h2>
           <div className="space-y-3">
-            {expenseCategories.map((category) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <span className="text-2xl">{category.icon}</span>
-                  <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {category.name}
-                  </span>
-                  {category.isDefault && (
-                    <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
-                      ডিফল্ট
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleEdit(category)}
-                    className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
-                  >
-                    <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-                  </motion.button>
-                  {!category.isDefault && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowDeleteConfirm(category.id)}
-                      className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
-                    >
-                      <Trash2 size={16} className="text-red-500" />
-                    </motion.button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+            {expenseCategories.map((category) => renderCategoryItem(category))}
             {expenseCategories.length === 0 && (
               <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 কোন খরচের ক্যাটেগরি নেই
@@ -184,51 +294,7 @@ export const CategoryManager: React.FC = () => {
             আয়ের ক্যাটেগরি ({incomeCategories.length})
           </h2>
           <div className="space-y-3">
-            {incomeCategories.map((category) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <span className="text-2xl">{category.icon}</span>
-                  <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {category.name}
-                  </span>
-                  {category.isDefault && (
-                    <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
-                      ডিফল্ট
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleEdit(category)}
-                    className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
-                  >
-                    <Edit2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-                  </motion.button>
-                  {!category.isDefault && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowDeleteConfirm(category.id)}
-                      className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
-                    >
-                      <Trash2 size={16} className="text-red-500" />
-                    </motion.button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+            {incomeCategories.map((category) => renderCategoryItem(category))}
             {incomeCategories.length === 0 && (
               <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 কোন আয়ের ক্যাটেগরি নেই
@@ -244,6 +310,16 @@ export const CategoryManager: React.FC = () => {
           category={editingCategory}
           onClose={handleCloseForm}
           onSubmit={handleCloseForm}
+        />
+      )}
+
+      {/* Subcategory Form Modal */}
+      {showSubcategoryForm && (
+        <SubcategoryForm
+          subcategory={editingSubcategory}
+          parentCategory={selectedParentCategory}
+          onClose={handleCloseSubcategoryForm}
+          onSubmit={handleCloseSubcategoryForm}
         />
       )}
 

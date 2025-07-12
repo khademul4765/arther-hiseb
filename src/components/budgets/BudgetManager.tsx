@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { BudgetForm } from './BudgetForm';
 import { BudgetDetails } from './BudgetDetails';
 import { Budget } from '../../types/index';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
@@ -238,61 +238,97 @@ export const BudgetManager: React.FC = () => {
       </div>
 
       {/* Budget Form Modal */}
-      {showForm && (
-        <BudgetForm
-          budget={editingBudget}
-          onClose={handleCloseForm}
-          onSubmit={handleCloseForm}
-        />
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <BudgetForm
+            budget={editingBudget}
+            onClose={handleCloseForm}
+            onSubmit={handleCloseForm}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Budget Details Modal */}
-      {showDetails && (
-        <BudgetDetails
-          budgetId={showDetails}
-          onClose={() => setShowDetails(null)}
-        />
-      )}
+      <AnimatePresence>
+        {showDetails && (
+          <BudgetDetails
+            budgetId={showDetails}
+            onClose={() => setShowDetails(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {showDeleteConfirm && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDeleteConfirm(null)}
           >
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-              বাজেট মুছবেন?
-            </h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
-              এই বাজেটটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className={`flex-1 px-4 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 25,
+                duration: 0.3 
+              }}
+              className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.h3 
+                className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
               >
-                বাতিল
-              </button>
-              <button
-                onClick={() => handleDelete(showDeleteConfirm)}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                বাজেট মুছবেন?
+              </motion.h3>
+              <motion.p 
+                className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
               >
-                মুছে ফেলুন
-              </button>
-            </div>
+                এই বাজেটটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+              </motion.p>
+              <motion.div 
+                className="flex space-x-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                    darkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  বাতিল
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  মুছে ফেলুন
+                </motion.button>
+              </motion.div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Toast Notification */}
       {toast && (

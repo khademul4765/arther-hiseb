@@ -38,8 +38,8 @@ const bottomNavItems = [
   { path: '/accounts', name: 'অ্যাকাউন্ট', icon: Wallet },
   { path: '/transactions', name: 'লেনদেন', icon: CreditCard },
   { path: '/', name: 'হোম', icon: Home },
+  { path: '/contacts', name: 'যোগাযোগ', icon: Users },
   { path: '/goals', name: 'লক্ষ্য', icon: Target },
-  { path: '/budgets', name: 'বাজেট', icon: TrendingUp },
 ];
 
 export const Navigation: React.FC = () => {

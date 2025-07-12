@@ -119,8 +119,8 @@ export const ReportsPage: React.FC = () => {
       const months = [];
       for (let i = startMonth; i <= endMonth; i++) {
         const month = new Date(startYear, i, 1);
-        const monthTransactions = transactions.filter(t => {
-          const tDate = new Date(t.date);
+    const monthTransactions = transactions.filter(t => {
+      const tDate = new Date(t.date);
           return tDate.getMonth() === i && tDate.getFullYear() === startYear;
         });
         
@@ -142,12 +142,12 @@ export const ReportsPage: React.FC = () => {
       const monthTransactions = transactions.filter(t => {
         const tDate = new Date(t.date);
         return tDate.getMonth() === month.getMonth() && tDate.getFullYear() === month.getFullYear();
-      });
-      
+    });
+    
       months.push({
         month: `${formatBengaliDate(month).split(' ')[1]} ${formatBengaliDate(month).split(' ')[2]}`, // Month and year
-        income: monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-        expense: monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+      income: monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+      expense: monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
       });
       
       currentDate.setMonth(currentDate.getMonth() + 1);

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { X, Users, Calendar as CalendarIcon, DollarSign, Phone, MapPin, FileText, Clock, Tag, User, ChevronDown, Wallet, CreditCard, Smartphone, Building } from 'lucide-react';
+import { X, Users, Calendar as CalendarIcon, DollarSign, Phone, MapPin, FileText, Clock, Tag, User, ChevronDown, Wallet, CreditCard, Smartphone, Building, XCircle } from 'lucide-react';
 import { Transaction } from '../../types/index';
 import { CategorySelect } from '../common/CategorySelect';
 import { DatePickerHeader, CustomCalendarContainer } from '../common/DatePickerHeader';
@@ -286,23 +286,62 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 300, 
+          damping: 25,
+          duration: 0.3 
+        }}
         className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4 md:mb-6">
-          <h2 className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{transaction ? 'লেনদেন সম্পাদনা' : 'নতুন লেনদেন'}</h2>
-          <button onClick={onClose} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}>
+        <motion.div 
+          className="flex items-center justify-between mb-4 md:mb-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <motion.h2 
+            className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
+            {transaction ? 'লেনদেন সম্পাদনা' : 'নতুন লেনদেন'}
+          </motion.h2>
+          <motion.button 
+            onClick={onClose} 
+            className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+          >
             <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+          </motion.button>
+        </motion.div>
+        <motion.form 
+          onSubmit={handleSubmit(onFormSubmit)} 
+          className="space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+        >
           {/* Amount */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+          >
             <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>পরিমাণ *</label>
             <div className="relative">
               <span className={`absolute left-3 top-3 md:top-2.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
@@ -315,7 +354,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               />
             </div>
             {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
-          </div>
+          </motion.div>
 
           {/* Type */}
           <div>
@@ -373,7 +412,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>তারিখ *</label>
-              <div className={`flex items-center rounded-lg border ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'} shadow-sm focus-within:ring-2 focus-within:ring-green-400 focus-within:border-transparent transition-all`}>
+              <div className={`flex items-center rounded-lg border ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'} shadow-sm focus-within:ring-2 focus-within:ring-green-400 focus-within:border-transparent transition-all relative`}>
                 <CalendarIcon
                   size={22}
                   className={`ml-3 mr-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}
@@ -394,10 +433,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   dateFormat="yyyy-MM-dd"
                   locale={bn}
                   placeholderText="তারিখ বাছাই করুন"
-                  className={`w-full pl-2 pr-3 py-2 rounded-r-lg border-0 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} focus:ring-0 focus:border-transparent focus:outline-none`}
+                  className={`w-full pl-2 pr-10 py-2 rounded-r-lg border-0 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} focus:ring-0 focus:border-transparent focus:outline-none`}
                   calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
                   popperPlacement="bottom-start"
-                  isClearable
+                  isClearable={false}
                   renderCustomHeader={(props) => (
                     <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={datePickerRef} />
                   )}
@@ -416,6 +455,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   )}
                   inputReadOnly
                 />
+                {date && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDate('');
+                      setValue('date', '', { shouldValidate: true });
+                    }}
+                    className={`absolute right-3 p-1 rounded-full transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}
+                  >
+                    <XCircle size={16} className="text-red-500" />
+                  </button>
+                )}
               </div>
               {errors.date && <span className="text-red-500 text-sm mt-1">{errors.date.message}</span>}
             </div>
@@ -467,15 +518,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Person */}
           <div>
             <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>ব্যক্তি / প্রতিষ্ঠান</label>
-            <div className="relative">
-              <Users size={16} className={`absolute left-3 top-3 md:top-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <div className="pl-10">
-                <ContactSelect
-                  value={selectedContactId}
-                  onChange={setSelectedContactId}
-                />
-              </div>
-            </div>
+            <ContactSelect
+              value={selectedContactId}
+              onChange={setSelectedContactId}
+              darkMode={darkMode}
+              placeholder="ব্যক্তি/প্রতিষ্ঠানের নাম লিখুন..."
+            />
           </div>
           {/* Note */}
           <div>
@@ -504,22 +552,31 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           {/* Submit Button */}
-          <div className="flex space-x-3 pt-4">
-            <button
+          <motion.div 
+            className="flex space-x-3 pt-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0, duration: 0.3 }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={onClose}
               className={`flex-1 px-4 py-3 md:py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
               বাতিল
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               className="flex-1 px-4 py-3 md:py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium"
             >
               {transaction ? 'আপডেট করুন' : 'সংরক্ষণ করুন'}
-            </button>
-          </div>
-        </form>
+            </motion.button>
+          </motion.div>
+        </motion.form>
       </motion.div>
     </motion.div>
   );

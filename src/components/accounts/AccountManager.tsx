@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { AccountForm } from './AccountForm';
 import { TransferForm } from './TransferForm';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, ArrowRightLeft, Wallet, Building2, Smartphone, RotateCcw, FilterIcon } from 'lucide-react';
 import { TransactionItem } from '../transactions/TransactionItem';
 import { CategorySelect } from '../common/CategorySelect';
@@ -508,83 +508,148 @@ export const AccountManager: React.FC = () => {
       </div>
 
       {/* Account Form Modal */}
-      {showForm && (
-        <AccountForm
-          account={editingAccount}
-          onClose={handleCloseForm}
-          onSubmit={handleCloseForm}
-        />
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <AccountForm
+            account={editingAccount}
+            onClose={handleCloseForm}
+            onSubmit={handleCloseForm}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Transfer Form Modal */}
-      {showTransferForm && (
-        <TransferForm
-          onClose={() => setShowTransferForm(false)}
-          onSubmit={() => setShowTransferForm(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showTransferForm && (
+          <TransferForm
+            onClose={() => setShowTransferForm(false)}
+            onSubmit={() => setShowTransferForm(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {showDeleteConfirm && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDeleteConfirm(null)}
           >
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-              অ্যাকাউন্ট মুছবেন?
-            </h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
-              এই অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className={`flex-1 px-4 py-2 rounded-lg border ${
-                  darkMode
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 25,
+                duration: 0.3 
+              }}
+              className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.h3 
+                className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
               >
-                বাতিল
-              </button>
-              <button
-                onClick={() => handleDelete(showDeleteConfirm)}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                অ্যাকাউন্ট মুছবেন?
+              </motion.h3>
+              <motion.p 
+                className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
               >
-                মুছে ফেলুন
-              </button>
-            </div>
+                এই অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+              </motion.p>
+              <motion.div 
+                className="flex space-x-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                    darkMode
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  বাতিল
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  মুছে ফেলুন
+                </motion.button>
+              </motion.div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Account Transactions Modal */}
-      {showAccountTransactions && selectedAccount && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {showAccountTransactions && selectedAccount && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowAccountTransactions(false)}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAccount.name} - স্টেটমেন্ট</h2>
-              <button
-                onClick={() => setShowAccountTransactions(false)}
-                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 25,
+                duration: 0.3 
+              }}
+              className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.div 
+                className="flex items-center justify-between mb-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
               >
-                ✕
-              </button>
-            </div>
+                <motion.h2 
+                  className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                >
+                  {selectedAccount.name} - স্টেটমেন্ট
+                </motion.h2>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowAccountTransactions(false)}
+                  className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                >
+                  ✕
+                </motion.button>
+              </motion.div>
 
             {/* Mobile Filter Toggle Button */}
             <div className="lg:hidden mb-4">
@@ -801,6 +866,7 @@ export const AccountManager: React.FC = () => {
           </motion.div>
         </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

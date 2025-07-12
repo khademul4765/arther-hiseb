@@ -112,7 +112,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'budget' | 'goal' | 'loan' | 'insight';
+  type: 'budget' | 'goal' | 'loan' | 'insight' | 'transfer';
   priority: 'low' | 'medium' | 'high';
   isRead: boolean;
   createdAt: Date;
@@ -120,6 +120,7 @@ export interface Notification {
 
 export interface Contact {
   id: string;
+  userId: string;
   name: string;
   type: 'person' | 'organization';
   phone?: string;

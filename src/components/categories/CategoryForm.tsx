@@ -102,25 +102,49 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 300, 
+          damping: 25,
+          duration: 0.3 
+        }}
         className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4 md:mb-6">
-          <h2 className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <motion.div 
+          className="flex items-center justify-between mb-4 md:mb-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <motion.h2 
+            className={`text-lg md:text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
             {category ? 'ক্যাটেগরি সম্পাদনা' : 'নতুন ক্যাটেগরি'}
-          </h2>
-          <button
+          </motion.h2>
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40' : 'hover:bg-red-100'}`}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
           >
             <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           {/* Name */}
@@ -191,26 +215,26 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             <div>
               <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 মূল ক্যাটেগরি নির্বাচন করুন *
-              </label>
-              <select
+            </label>
+            <select
                 {...register('parentId', { required: selectedIsSubcategory ? 'মূল ক্যাটেগরি নির্বাচন করুন' : false })}
-                className={`w-full px-3 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
-              >
+              className={`w-full px-3 py-2 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+            >
                 <option value="">মূল ক্যাটেগরি নির্বাচন করুন</option>
                 {parentCategories.map((parentCat) => (
                   <option key={parentCat.id} value={parentCat.id}>
                     {parentCat.icon} {parentCat.name}
                   </option>
                 ))}
-              </select>
+            </select>
               {errors.parentId && (
                 <p className="text-red-500 text-sm mt-1">{errors.parentId.message}</p>
               )}
-            </div>
+          </div>
           )}
 
           {/* Color */}

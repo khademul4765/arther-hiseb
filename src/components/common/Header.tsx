@@ -1,24 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Sun, Moon, Menu, X, LogOut } from 'lucide-react';
+import { Bell, Sun, Moon, X, Menu, LogOut, TrendingUp, TrendingDown, AlertTriangle, Target, CreditCard, DollarSign, Calendar, CheckCircle, Clock, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { bn } from 'date-fns/locale';
 
 function formatTime12h(date: Date) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  return date.toLocaleTimeString('bn-BD', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  });
 }
 
 export const Header: React.FC = () => {
   const { darkMode, toggleDarkMode, notifications, user, logout } = useStore();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const unreadNotifications = notifications.filter(n => !n.isRead).length;
+  
+  // Sort notifications by creation date (latest first)
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA; // Most recent first
+  });
+  
   const [isInternalToggle, setIsInternalToggle] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationPanelRef = useRef<HTMLDivElement>(null);
@@ -79,27 +88,53 @@ export const Header: React.FC = () => {
       markNotificationAsRead(notificationId);
     }
 
-    // Navigate based on notification type and content
-    switch (notification.type) {
+    const { type, title, message } = notification;
+
+    // Navigate based on notification type and specific content
+    switch (type) {
       case 'budget':
+        // All budget notifications go to budgets page
         navigate('/budgets');
         break;
+        
       case 'goal':
+        // All goal notifications go to goals page
         navigate('/goals');
         break;
+        
       case 'loan':
+        // All loan notifications go to loans page
         navigate('/loans');
         break;
+        
       case 'insight':
-        // Check if it's a low balance notification
-        if (notification.title === 'কম ব্যালেন্স' || notification.message.includes('ব্যালেন্স মাত্র')) {
+        // Specific insight navigation based on content
+        if (title.includes('কম ব্যালেন্স') || message.includes('ব্যালেন্স মাত্র')) {
+          // Low balance - go to accounts
           navigate('/accounts');
+        } else if (title.includes('ট্রান্সফার সফল') || message.includes('ট্রান্সফার হয়েছে')) {
+          // Transfer success - go to transactions
+          navigate('/transactions');
+        } else if (title.includes('বড় খরচ') || message.includes('একক লেনদেনে')) {
+          // Large expense - go to transactions
+          navigate('/transactions');
+        } else if (title.includes('বেশি ছোট খরচ') || message.includes('ছোট খরচ')) {
+          // Frequent small expenses - go to transactions
+          navigate('/transactions');
+        } else if (title.includes('নতুন কন্ট্যাক্টস') || message.includes('কন্ট্যাক্টস তালিকায়')) {
+          // Contact added - go to contacts page
+          navigate('/contacts');
+        } else if (title.includes('লক্ষ্য অর্জিত') || message.includes('অভিনন্দন')) {
+          // Goal achievement - go to goals
+          navigate('/goals');
         } else {
-          // For other insights, navigate to transactions
+          // Default for other insights - go to transactions
           navigate('/transactions');
         }
         break;
+        
       default:
+        // Default navigation to dashboard
         navigate('/');
         break;
     }
@@ -126,6 +161,176 @@ export const Header: React.FC = () => {
     window.dispatchEvent(new CustomEvent('mobileMenuToggle', {
       detail: { isOpen: newState }
     }));
+  };
+
+  // Get notification icon based on type and priority
+  const getNotificationIcon = (notification: any) => {
+    const { type, priority, title, message } = notification;
+    
+    // High priority notifications
+    if (priority === 'high') {
+      return <AlertTriangle size={18} className="text-red-500" />;
+    }
+    
+    // Type-based icons with specific content matching
+    switch (type) {
+      case 'budget':
+        if (title.includes('বাজেট অতিক্রম') || title.includes('বাজেটের সীমা')) {
+          return <TrendingDown size={18} className="text-red-500" />;
+        }
+        if (title.includes('বাজেটের কাছাকাছি') || title.includes('৮০%')) {
+          return <AlertTriangle size={18} className="text-orange-500" />;
+        }
+        return <TrendingDown size={18} className="text-orange-500" />;
+        
+      case 'goal':
+        if (title.includes('লক্ষ্য অর্জিত') || title.includes('সম্পূর্ণ হয়েছে')) {
+          return <Star size={18} className="text-yellow-500" />;
+        }
+        if (title.includes('লক্ষ্যের কাছাকাছি') || title.includes('৮০%')) {
+          return <Target size={18} className="text-blue-500" />;
+        }
+        if (title.includes('সময়সীমা কাছাকাছি') || title.includes('দিন বাকি')) {
+          return <Clock size={18} className="text-orange-500" />;
+        }
+        return <Target size={18} className="text-blue-500" />;
+        
+      case 'loan':
+        if (title.includes('ঋণ পরিশোধ সম্পূর্ণ') || title.includes('সম্পূর্ণ পরিশোধ')) {
+          return <CheckCircle size={18} className="text-green-500" />;
+        }
+        if (title.includes('কিস্তি বাকি') || title.includes('পরিশোধ হয়নি')) {
+          return <AlertTriangle size={18} className="text-red-500" />;
+        }
+        if (title.includes('কিস্তি আসন্ন') || title.includes('পরিশোধ করতে হবে')) {
+          return <Clock size={18} className="text-orange-500" />;
+        }
+        return <CreditCard size={18} className="text-purple-500" />;
+        
+      case 'insight':
+        // Low balance notifications
+        if (title.includes('কম ব্যালেন্স') || message.includes('ব্যালেন্স মাত্র')) {
+          return <AlertTriangle size={18} className="text-red-500" />;
+        }
+        // Large expense notifications
+        if (title.includes('বড় খরচ') || message.includes('একক লেনদেনে')) {
+          return <TrendingDown size={18} className="text-red-500" />;
+        }
+        // Transfer success notifications
+        if (title.includes('ট্রান্সফার সফল') || message.includes('ট্রান্সফার হয়েছে')) {
+          return <TrendingUp size={18} className="text-green-500" />;
+        }
+        // Goal achievement notifications
+        if (title.includes('লক্ষ্য অর্জিত') || message.includes('অভিনন্দন')) {
+          return <Star size={18} className="text-yellow-500" />;
+        }
+        // Frequent small expenses
+        if (title.includes('বেশি ছোট খরচ') || message.includes('ছোট খরচ')) {
+          return <TrendingDown size={18} className="text-orange-500" />;
+        }
+        // Contact added notifications
+        if (title.includes('নতুন কন্ট্যাক্টস') || message.includes('কন্ট্যাক্টস তালিকায়')) {
+          return <CheckCircle size={18} className="text-green-500" />;
+        }
+        // Default insight icon
+        return <DollarSign size={18} className="text-green-500" />;
+        
+      default:
+        return <Bell size={18} className="text-gray-500" />;
+    }
+  };
+
+  // Get notification background color based on type and priority
+  const getNotificationBgColor = (notification: any) => {
+    const { type, priority, isRead, title, message } = notification;
+    
+    if (isRead) {
+      return darkMode ? 'bg-gray-800' : 'bg-gray-50';
+    }
+    
+    if (priority === 'high') {
+      return darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200';
+    }
+    
+    switch (type) {
+      case 'budget':
+        if (title.includes('বাজেট অতিক্রম') || title.includes('বাজেটের সীমা')) {
+          return darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200';
+        }
+        if (title.includes('বাজেটের কাছাকাছি') || title.includes('৮০%')) {
+          return darkMode ? 'bg-orange-900/20 border-orange-500/30' : 'bg-orange-50 border-orange-200';
+        }
+        return darkMode ? 'bg-orange-900/20 border-orange-500/30' : 'bg-orange-50 border-orange-200';
+        
+      case 'goal':
+        if (title.includes('লক্ষ্য অর্জিত') || title.includes('সম্পূর্ণ হয়েছে')) {
+          return darkMode ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200';
+        }
+        if (title.includes('সময়সীমা কাছাকাছি') || title.includes('দিন বাকি')) {
+          return darkMode ? 'bg-orange-900/20 border-orange-500/30' : 'bg-orange-50 border-orange-200';
+        }
+        return darkMode ? 'bg-blue-900/20 border-blue-500/30' : 'bg-blue-50 border-blue-200';
+        
+      case 'loan':
+        if (title.includes('ঋণ পরিশোধ সম্পূর্ণ') || title.includes('সম্পূর্ণ পরিশোধ')) {
+          return darkMode ? 'bg-green-900/20 border-green-500/30' : 'bg-green-50 border-green-200';
+        }
+        if (title.includes('কিস্তি বাকি') || title.includes('পরিশোধ হয়নি')) {
+          return darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200';
+        }
+        if (title.includes('কিস্তি আসন্ন') || title.includes('পরিশোধ করতে হবে')) {
+          return darkMode ? 'bg-orange-900/20 border-orange-500/30' : 'bg-orange-50 border-orange-200';
+        }
+        return darkMode ? 'bg-purple-900/20 border-purple-500/30' : 'bg-purple-50 border-purple-200';
+        
+      case 'insight':
+        // Low balance notifications
+        if (title.includes('কম ব্যালেন্স') || message.includes('ব্যালেন্স মাত্র')) {
+          return darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200';
+        }
+        // Large expense notifications
+        if (title.includes('বড় খরচ') || message.includes('একক লেনদেনে')) {
+          return darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200';
+        }
+        // Transfer success notifications
+        if (title.includes('ট্রান্সফার সফল') || message.includes('ট্রান্সফার হয়েছে')) {
+          return darkMode ? 'bg-green-900/20 border-green-500/30' : 'bg-green-50 border-green-200';
+        }
+        // Goal achievement notifications
+        if (title.includes('লক্ষ্য অর্জিত') || message.includes('অভিনন্দন')) {
+          return darkMode ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200';
+        }
+        // Frequent small expenses
+        if (title.includes('বেশি ছোট খরচ') || message.includes('ছোট খরচ')) {
+          return darkMode ? 'bg-orange-900/20 border-orange-500/30' : 'bg-orange-50 border-orange-200';
+        }
+        // Contact added notifications
+        if (title.includes('নতুন কন্ট্যাক্টস') || message.includes('কন্ট্যাক্টস তালিকায়')) {
+          return darkMode ? 'bg-green-900/20 border-green-500/30' : 'bg-green-50 border-green-200';
+        }
+        // Default insight color
+        return darkMode ? 'bg-green-900/20 border-green-500/30' : 'bg-green-50 border-green-200';
+        
+      default:
+        return darkMode ? 'bg-gray-700' : 'bg-white';
+    }
+  };
+
+  // Get time ago text
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'এইমাত্র';
+    if (diffInMinutes < 60) return `${diffInMinutes} মিনিট আগে`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} ঘন্টা আগে`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} দিন আগে`;
+    
+    return format(date, 'dd MMM yyyy', { locale: bn });
   };
 
   return (
@@ -188,68 +393,153 @@ export const Header: React.FC = () => {
                 <motion.span 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg"
+                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg font-bold"
                 >
-                  {unreadNotifications}
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </motion.span>
               )}
+              
               {/* Notification Dropdown */}
               <AnimatePresence>
                 {showNotifications && (
                   <motion.div
                     ref={notificationPanelRef}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className={`absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl shadow-2xl border z-50 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                    className={`absolute right-0 mt-3 w-96 max-h-[600px] overflow-hidden rounded-2xl shadow-2xl border z-50 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                   >
-                    <div className="p-4 border-b font-bold text-lg flex items-center justify-between">
-                      <span>বিজ্ঞপ্তি</span>
-                      <button 
-                        onClick={handleCloseNotifications} 
-                        className={`p-1 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
-                      >
-                        <X size={18} className="text-gray-400 hover:text-red-500" />
-                      </button>
+                    {/* Header */}
+                    <div className={`p-4 border-b ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} rounded-t-2xl`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-600' : 'bg-blue-100'}`}>
+                            <Bell size={16} className={darkMode ? 'text-blue-200' : 'text-blue-600'} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg">নোটিফিকেশন</h3>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {unreadNotifications}টি অপঠিত
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={handleCloseNotifications} 
+                          className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                        >
+                          <X size={18} className="text-gray-400 hover:text-red-500" />
+                        </button>
+                      </div>
                     </div>
-                    {notifications.length > 0 && unreadNotifications > 0 && (
-                      <button
-                        onClick={markAllAsRead}
-                        className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-base font-semibold transition"
-                      >
-                        পড়া হয়েছে।
-                      </button>
+
+                    {/* Mark All as Read Button */}
+                    {sortedNotifications.length > 0 && unreadNotifications > 0 && (
+                      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={markAllAsRead}
+                          className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                        >
+                          <CheckCircle size={16} />
+                          <span>সব পড়া হয়েছে</span>
+                        </button>
+                      </div>
                     )}
-                    {notifications.length === 0 ? (
-                      <div className="p-6 text-center text-gray-400">কোন বিজ্ঞপ্তি নেই</div>
-                    ) : (
-                      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {notifications.map((n) => (
-                          <li
-                            key={n.id}
-                            onClick={() => handleNotificationClick(n.id)}
-                            className={`p-4 cursor-pointer transition hover:bg-gray-50 dark:hover:bg-gray-700 ${n.isRead ? '' : 'bg-green-50 dark:bg-green-900/30 font-semibold'}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{n.title}</span>
-                              {!n.isRead && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-green-500" />}
-                            </div>
-                            {/* Currency icon after amount in message */}
-                            <div className="text-sm mt-1 opacity-80">
-                              {n.message && n.message.replace(/৳([\d,]+)/g, (match, p1) => `${p1} ৳`)}
-                            </div>
-                            <div className="text-xs mt-1 opacity-60">
-                              {n.createdAt ? `${format(new Date(n.createdAt), 'dd MMM yyyy')}, ${formatTime12h(new Date(n.createdAt))}` : ''}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+
+                    {/* Notifications List */}
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {sortedNotifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                            <Bell size={24} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
+                          </div>
+                          <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            কোন বিজ্ঞপ্তি নেই
+                          </p>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                            নতুন বিজ্ঞপ্তি এলে এখানে দেখা যাবে
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-2">
+                          {sortedNotifications.map((n) => {
+                            const isNew = (() => {
+                              const now = new Date();
+                              const notificationDate = new Date(n.createdAt);
+                              const hoursDiff = (now.getTime() - notificationDate.getTime()) / (1000 * 60 * 60);
+                              return hoursDiff < 1;
+                            })();
+
+                            return (
+                              <motion.div
+                                key={n.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.2 }}
+                                onClick={() => handleNotificationClick(n.id)}
+                                className={`mb-2 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${getNotificationBgColor(n)} ${!n.isRead ? 'shadow-md' : ''}`}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  {/* Icon */}
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}>
+                                    {getNotificationIcon(n)}
+                                  </div>
+                                  
+                                  {/* Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <h4 className={`font-semibold text-sm leading-tight ${darkMode ? 'text-white' : 'text-gray-900'} ${!n.isRead ? 'font-bold' : ''}`}>
+                                          {n.title}
+                                        </h4>
+                                        <p className={`text-sm mt-1 leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                          {n.message && n.message.replace(/৳([\d,]+)/g, (match, p1) => `${p1} ৳`)}
+                                        </p>
+                                      </div>
+                                      
+                                      {/* Status indicators */}
+                                      <div className="flex items-center space-x-2 ml-2">
+                                        {!n.isRead && (
+                                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        )}
+                                        {isNew && (
+                                          <span className="px-2 py-1 text-xs bg-red-500 text-white rounded-full font-bold animate-bounce">
+                                            নতুন
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Time */}
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <Clock size={12} className={darkMode ? 'text-gray-500' : 'text-gray-400'} />
+                                      <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                        {getTimeAgo(new Date(n.createdAt))}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    {sortedNotifications.length > 0 && (
+                      <div className={`p-3 border-t ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} rounded-b-2xl`}>
+                        <p className={`text-xs text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          সর্বমোট {sortedNotifications.length}টি বিজ্ঞপ্তি
+                        </p>
+                      </div>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.button>
+
+
 
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}

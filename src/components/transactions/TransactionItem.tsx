@@ -105,7 +105,10 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
               </div>
               {/* End extra info row */}
               {transaction.note && (<p className={`text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>{transaction.note}</p>)}
-              {transaction.person && (<p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>ব্যক্তি / প্রতিষ্ঠান: {transaction.person}</p>)}
+              {/* Hide person/org for loan/interest category */}
+              {transaction.person && transaction.category !== 'লোন / ইন্টারেস্ট' && (
+                <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>ব্যক্তি / প্রতিষ্ঠান: {transaction.person}</p>
+              )}
               {transaction.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {transaction.tags.filter(tag => tag !== 'ট্রান্সফার').map((tag, index) => (
@@ -308,7 +311,25 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
             </div>
             {/* Print-only receipt layout */}
             <div className="hidden print:block print:receipt-paper-outer">
-              <div className="print:receipt-title">লেনদেন রসিদ</div>
+              {/* Header Row */}
+              <div className="print:receipt-header-row">
+                <div className="print:receipt-app-info">
+                  <div className="print:receipt-app-logo">💰</div>
+                  <div className="print:receipt-app-name">অর্থের হিসেব</div>
+                  <div>by MK Bashar</div>
+                </div>
+                <div className="print:receipt-meta">
+                  <div className="print:receipt-label">তারিখ:</div>
+                  <div className="print:receipt-value">{format(new Date(transaction.date), 'dd/MM/yyyy')}</div>
+                  <div className="print:receipt-label">সময়:</div>
+                  <div className="print:receipt-value">{formatTime12h(transaction.time)}</div>
+                </div>
+              </div>
+              
+              {/* Title */}
+              <div className="print:receipt-title-box">লেনদেন রসিদ</div>
+              
+              {/* Fields */}
               <div className="print:receipt-fields">
                 <div>ক্যাটেগরি:</div>
                 <div className="print:receipt-underline">{displayCategory || '—'}</div>
@@ -330,6 +351,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, d
                 <div className="print:receipt-amount-label">পরিমাণ (টাকা):</div>
                 <div className="print:receipt-amount">{transaction.amount.toLocaleString()} ৳</div>
               </div>
+              
+              {/* Footer */}
               <div className="print:receipt-footer">
                 <div className="print:receipt-signature">প্রাপ্তির স্বাক্ষর</div>
                 <div className="print:receipt-signature">অনুমোদিত স্বাক্ষর</div>
@@ -353,12 +376,381 @@ declare global {
 // Print helper for modal only
 if (typeof window !== 'undefined' && !window.printModalContent) {
   window.printModalContent = (id: string) => {
-    const printContents = document.getElementById(id)?.innerHTML;
-    if (!printContents) return;
-    const originalContents = document.body.innerHTML;
-    document.body.innerHTML = printContents;
+    const printElement = document.getElementById(id);
+    if (!printElement) return;
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('পপআপ ব্লকার সক্রিয়। প্রিন্ট করার জন্য পপআপ অনুমতি দিন।');
+      return;
+    }
+    
+    // Get the print-only content
+    const printContent = printElement.querySelector('.print\\:receipt-paper-outer');
+    if (!printContent) return;
+    
+    // Create the print document
+    const printDocument = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>লেনদেন রসিদ - ${new Date().toLocaleDateString('bn-BD')}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <style>
+            @media print {
+              body { 
+                margin: 0; 
+                padding: 20px; 
+                background: white !important; 
+              }
+              .receipt-paper {
+                background: #fff !important;
+                color: #000 !important;
+                width: 360px !important;
+                margin: 0 auto !important;
+                border: 1.5px solid #27ae60 !important;
+                border-radius: 8px !important;
+                box-shadow: none !important;
+                font-family: 'Noto Serif Bengali', 'Fira Mono', 'Consolas', 'Menlo', monospace !important;
+                padding: 0 !important;
+                position: relative;
+              }
+              .receipt-paper * {
+                color: #000 !important;
+                background: none !important;
+                box-shadow: none !important;
+              }
+              .print\\:receipt-outer {
+                padding: 24px 24px 0 24px;
+              }
+              .print\\:receipt-header-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 8px;
+              }
+              .print\\:receipt-app-info {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                font-size: 13px;
+                font-weight: 600;
+                gap: 2px;
+              }
+              .print\\:receipt-app-logo {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: #27ae60;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-size: 18px;
+                margin-bottom: 2px;
+              }
+              .print\\:receipt-app-name {
+                font-size: 14px;
+                font-weight: 700;
+                color: #27ae60;
+                letter-spacing: 0.5px;
+              }
+              .print\\:receipt-meta {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                font-size: 12px;
+                gap: 2px;
+              }
+              .print\\:receipt-label {
+                font-weight: 600;
+                font-size: 13px;
+                color: #27ae60 !important;
+                margin-bottom: 1px;
+              }
+              .print\\:receipt-value {
+                font-size: 13px;
+                font-family: inherit;
+                margin-bottom: 2px;
+                border-bottom: 1px dotted #bbb;
+                min-width: 60px;
+                display: inline-block;
+                text-align: right;
+              }
+              .print\\:receipt-title-box {
+                border: 1.5px solid #27ae60;
+                border-radius: 6px;
+                display: inline-block;
+                padding: 3px 18px;
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: 1.5px;
+                color: #27ae60;
+                background: #f6fef9;
+                margin: 0 auto 18px auto;
+                text-align: center;
+                width: 100%;
+              }
+              .print\\:receipt-fields {
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                gap: 0 12px;
+                padding: 0 24px 0 24px;
+                font-size: 14px;
+                margin-bottom: 18px;
+              }
+              .print\\:receipt-underline {
+                border-bottom: 1px solid #bbb;
+                min-height: 18px;
+                padding-bottom: 2px;
+                font-family: inherit;
+                font-size: 14px;
+                margin-bottom: 2px;
+                display: flex;
+                align-items: center;
+              }
+              .print\\:receipt-amount {
+                font-size: 20px;
+                font-weight: bold;
+                color: #27ae60;
+                letter-spacing: 1px;
+                border-bottom: 2.5px double #27ae60;
+                padding-bottom: 2px;
+                margin-bottom: 2px;
+                min-height: 22px;
+                display: flex;
+                align-items: center;
+              }
+              .print\\:receipt-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                padding: 0 24px 0 24px;
+                margin-top: 32px;
+                font-size: 13px;
+                color: #888;
+              }
+              .print\\:receipt-signature {
+                border-top: 1px dashed #27ae60;
+                min-width: 100px;
+                text-align: center;
+                padding-top: 8px;
+                font-size: 13px;
+                color: #27ae60;
+                font-weight: 600;
+              }
+              .print\\:receipt-bottom-bar {
+                width: 100%;
+                height: 16px;
+                background: #27ae60;
+                border-bottom-left-radius: 8px;
+                border-bottom-right-radius: 8px;
+                margin-top: 18px;
+              }
+            }
+            body {
+              font-family: 'Noto Serif Bengali', serif;
+              background: #f5f5f5;
+              margin: 0;
+              padding: 20px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+            }
+            .receipt-paper {
+              background: #fff;
+              color: #000;
+              width: 360px;
+              margin: 0 auto;
+              border: 1.5px solid #27ae60;
+              border-radius: 8px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              font-family: 'Noto Serif Bengali', 'Fira Mono', 'Consolas', 'Menlo', monospace;
+              padding: 0;
+              position: relative;
+            }
+            .receipt-paper * {
+              color: #000;
+              background: none;
+              box-shadow: none;
+            }
+            .print\\:receipt-outer {
+              padding: 24px 24px 0 24px;
+            }
+            .print\\:receipt-header-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              margin-bottom: 8px;
+            }
+            .print\\:receipt-app-info {
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              font-size: 13px;
+              font-weight: 600;
+              gap: 2px;
+            }
+            .print\\:receipt-app-logo {
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              background: #27ae60;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: #fff;
+              font-size: 18px;
+              margin-bottom: 2px;
+            }
+            .print\\:receipt-app-name {
+              font-size: 14px;
+              font-weight: 700;
+              color: #27ae60;
+              letter-spacing: 0.5px;
+            }
+            .print\\:receipt-meta {
+              display: flex;
+              flex-direction: column;
+              align-items: flex-end;
+              font-size: 12px;
+              gap: 2px;
+            }
+            .print\\:receipt-label {
+              font-weight: 600;
+              font-size: 13px;
+              color: #27ae60;
+              margin-bottom: 1px;
+            }
+            .print\\:receipt-value {
+              font-size: 13px;
+              font-family: inherit;
+              margin-bottom: 2px;
+              border-bottom: 1px dotted #bbb;
+              min-width: 60px;
+              display: inline-block;
+              text-align: right;
+            }
+            .print\\:receipt-title-box {
+              border: 1.5px solid #27ae60;
+              border-radius: 6px;
+              display: inline-block;
+              padding: 3px 18px;
+              font-size: 18px;
+              font-weight: 800;
+              letter-spacing: 1.5px;
+              color: #27ae60;
+              background: #f6fef9;
+              margin: 0 auto 18px auto;
+              text-align: center;
+              width: 100%;
+            }
+            .print\\:receipt-fields {
+              display: grid;
+              grid-template-columns: 120px 1fr;
+              gap: 0 12px;
+              padding: 0 24px 0 24px;
+              font-size: 14px;
+              margin-bottom: 18px;
+            }
+            .print\\:receipt-underline {
+              border-bottom: 1px solid #bbb;
+              min-height: 18px;
+              padding-bottom: 2px;
+              font-family: inherit;
+              font-size: 14px;
+              margin-bottom: 2px;
+              display: flex;
+              align-items: center;
+            }
+            .print\\:receipt-amount {
+              font-size: 20px;
+              font-weight: bold;
+              color: #27ae60;
+              letter-spacing: 1px;
+              border-bottom: 2.5px double #27ae60;
+              padding-bottom: 2px;
+              margin-bottom: 2px;
+              min-height: 22px;
+              display: flex;
+              align-items: center;
+            }
+            .print\\:receipt-footer {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+              padding: 0 24px 0 24px;
+              margin-top: 32px;
+              font-size: 13px;
+              color: #888;
+            }
+            .print\\:receipt-signature {
+              border-top: 1px dashed #27ae60;
+              min-width: 100px;
+              text-align: center;
+              padding-top: 8px;
+              font-size: 13px;
+              color: #27ae60;
+              font-weight: 600;
+            }
+            .print\\:receipt-bottom-bar {
+              width: 100%;
+              height: 16px;
+              background: #27ae60;
+              border-bottom-left-radius: 8px;
+              border-bottom-right-radius: 8px;
+              margin-top: 18px;
+            }
+            .print-button {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #27ae60;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-family: 'Noto Serif Bengali', serif;
+              font-weight: 600;
+              z-index: 1000;
+            }
+            .print-button:hover {
+              background: #229954;
+            }
+            @media print {
+              .print-button {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-button" onclick="window.print()">প্রিন্ট করুন</button>
+          <div class="receipt-paper">
+            ${printContent.outerHTML}
+          </div>
+          <script>
+            // Auto-print after a short delay
+            setTimeout(() => {
     window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload();
+            }, 500);
+            
+            // Close window after printing
+            window.onafterprint = function() {
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printDocument);
+    printWindow.document.close();
+    printWindow.focus();
   };
 }

@@ -1,9 +1,114 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
-import { User, Building2, Plus, X, Phone, Mail, MapPin, ChevronDown, Search, Filter, Users, Pencil } from 'lucide-react';
+import { User, Building2, Plus, X, Phone, Mail, MapPin, ChevronDown, Search, Filter, Users, Pencil, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const emptyContact = { name: '', type: 'person', phone: '', email: '', address: '' };
+
+// ConfirmDeleteContactModal Component
+const ConfirmDeleteContactModal = ({ open, onClose, onConfirm, contactName, darkMode }: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  contactName: string;
+  darkMode?: boolean;
+}) => {
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'Enter') onConfirm();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose, onConfirm]);
+
+  if (!open) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 300, 
+          damping: 25,
+          duration: 0.3 
+        }}
+        className={`w-full max-w-sm rounded-xl p-6 shadow-xl border ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+        style={{ minWidth: 320 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <motion.div 
+          className="flex flex-col items-center text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: 'spring', 
+              stiffness: 400, 
+              damping: 15,
+              delay: 0.2 
+            }}
+          >
+            <AlertTriangle size={44} className="text-red-500 mb-2" />
+          </motion.div>
+          <motion.h2 
+            className="text-lg font-bold mb-1"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+          >
+            কন্ট্যাক্ট ডিলিট করবেন?
+          </motion.h2>
+          <motion.p 
+            className="mb-4 text-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+          >
+            আপনি কি নিশ্চিতভাবে <span className="font-semibold text-red-600">"{contactName}"</span> কন্ট্যাক্টটি ডিলিট করতে চান?<br />এই কাজটি বাতিল করা যাবে না।
+          </motion.p>
+          <motion.div 
+            className="flex gap-3 w-full mt-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.3 }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onClose}
+              className={`flex-1 px-4 py-2 rounded-lg border font-medium transition-colors ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              বাতিল
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium"
+            >
+              ডিলিট করুন
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 // Custom TypeSelect for 'ধরন'
 const typeOptions = [
@@ -98,6 +203,8 @@ export const ContactManager: React.FC = () => {
   const filterRef = useRef<HTMLDivElement>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'person' | 'organization'>('all');
   const [selectedContact, setSelectedContact] = useState<any | null>(null); // NEW: for details modal
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<string | null>(null);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -135,13 +242,22 @@ export const ContactManager: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Delete this contact?')) deleteContact(id);
+    setContactToDelete(id);
+    setDeleteConfirmOpen(true);
   };
 
   const handleAddNew = () => {
     setForm(emptyContact);
     setEditingId(null);
     setShowForm(true);
+  };
+
+  const confirmDelete = () => {
+    if (contactToDelete) {
+      deleteContact(contactToDelete);
+      setContactToDelete(null);
+      setDeleteConfirmOpen(false);
+    }
   };
 
   // Filter contacts by search and type
@@ -476,6 +592,19 @@ export const ContactManager: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmOpen && contactToDelete && (
+          <ConfirmDeleteContactModal
+            open={deleteConfirmOpen}
+            onClose={() => setDeleteConfirmOpen(false)}
+            onConfirm={confirmDelete}
+            contactName={contacts.find(c => c.id === contactToDelete)?.name || ''}
+            darkMode={darkMode}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

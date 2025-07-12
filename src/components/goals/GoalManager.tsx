@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { GoalForm } from './GoalForm';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, Target, DollarSign, X, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ThemedCheckbox } from '../common/ThemedCheckbox';
@@ -334,163 +334,229 @@ export const GoalManager: React.FC = () => {
       </div>
 
       {/* Goal Form Modal */}
-      {showForm && (
-        <GoalForm
-          goal={editingGoal}
-          onClose={handleCloseForm}
-          onSubmit={handleCloseForm}
-        />
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <GoalForm
+            goal={editingGoal}
+            onClose={handleCloseForm}
+            onSubmit={handleCloseForm}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Add Money Modal */}
-      {showAddMoney && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {showAddMoney && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowAddMoney(null)}
           >
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-              লক্ষ্যে টাকা জমা করুন
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>পরিমাণ *</label>
-                <div className="relative">
-                  <span className={`absolute left-3 top-3 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
-                  <input
-                    type="number"
-                    value={addAmount}
-                    onChange={(e) => setAddAmount(e.target.value)}
-                    placeholder="০.০০"
-                    className={`w-full pl-10 pr-3 py-3 rounded-lg border text-lg ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 25,
+                duration: 0.3 
+              }}
+              className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.h3 
+                className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+              >
+                লক্ষ্যে টাকা জমা করুন
+              </motion.h3>
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+              >
+                <div>
+                  <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>পরিমাণ *</label>
+                  <div className="relative">
+                    <span className={`absolute left-3 top-3 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>৳</span>
+                    <input
+                      type="number"
+                      value={addAmount}
+                      onChange={(e) => setAddAmount(e.target.value)}
+                      placeholder="০.০০"
+                      className={`w-full pl-10 pr-3 py-3 rounded-lg border text-lg ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>তারিখ *</label>
+                  <ReactDatePicker
+                    ref={addMoneyDatePickerRef}
+                    selected={addDate ? new Date(addDate) : null}
+                    onChange={dateObj => {
+                      if (dateObj) {
+                        const iso = dateObj.toISOString().slice(0, 10);
+                        setAddDate(iso);
+                      } else {
+                        setAddDate('');
+                      }
+                    }}
+                    dateFormat="yyyy-MM-dd"
+                    locale="bn"
+                    placeholderText="তারিখ বাছাই করুন"
+                    customInput={
+                      <DateInput
+                        darkMode={darkMode}
+                        placeholder="তারিখ বাছাই করুন"
+                      />
+                    }
+                    calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
+                    popperPlacement="bottom-start"
+                    isClearable
+                    renderCustomHeader={props => (
+                      <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={addMoneyDatePickerRef} />
+                    )}
+                    calendarContainer={props => (
+                      <CustomCalendarContainer
+                        {...props}
+                        onToday={() => {
+                          setAddDate(new Date().toISOString().slice(0, 10));
+                          if (addMoneyDatePickerRef.current && addMoneyDatePickerRef.current.setOpen) {
+                            addMoneyDatePickerRef.current.setOpen(false);
+                          }
+                        }}
+                        onClear={() => {
+                          setAddDate('');
+                          if (addMoneyDatePickerRef.current && addMoneyDatePickerRef.current.setOpen) {
+                            addMoneyDatePickerRef.current.setOpen(false);
+                          }
+                        }}
+                        darkMode={darkMode}
+                      />
+                    )}
                   />
                 </div>
-              </div>
-              <div>
-                <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>তারিখ *</label>
-                <ReactDatePicker
-                  ref={addMoneyDatePickerRef}
-                  selected={addDate ? new Date(addDate) : null}
-                  onChange={dateObj => {
-                    if (dateObj) {
-                      const iso = dateObj.toISOString().slice(0, 10);
-                      setAddDate(iso);
-                    } else {
-                      setAddDate('');
-                    }
-                  }}
-                  dateFormat="yyyy-MM-dd"
-                  locale="bn"
-                  placeholderText="তারিখ বাছাই করুন"
-                  customInput={
-                    <DateInput
-                      darkMode={darkMode}
-                      placeholder="তারিখ বাছাই করুন"
-                    />
-                  }
-                  calendarClassName={`${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-xl shadow-lg border-0 font-bengali pb-12`}
-                  popperPlacement="bottom-start"
-                  isClearable
-                  renderCustomHeader={props => (
-                    <DatePickerHeader {...props} darkMode={darkMode} datePickerRef={addMoneyDatePickerRef} />
-                  )}
-                  calendarContainer={props => (
-                    <CustomCalendarContainer
-                      {...props}
-                      onToday={() => {
-                        setAddDate(new Date().toISOString().slice(0, 10));
-                        if (addMoneyDatePickerRef.current && addMoneyDatePickerRef.current.setOpen) {
-                          addMoneyDatePickerRef.current.setOpen(false);
-                        }
-                      }}
-                      onClear={() => {
-                        setAddDate('');
-                        if (addMoneyDatePickerRef.current && addMoneyDatePickerRef.current.setOpen) {
-                          addMoneyDatePickerRef.current.setOpen(false);
-                        }
-                      }}
-                      darkMode={darkMode}
-                    />
-                  )}
-                />
-              </div>
-              <div>
-                <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>নোট (ঐচ্ছিক)</label>
-                <input
-                  type="text"
-                  value={addNote}
-                  onChange={e => setAddNote(e.target.value)}
-                  placeholder="নোট (ঐচ্ছিক)"
-                  className={`w-full px-3 py-3 rounded-lg border text-lg ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowAddMoney(null)}
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
+                <div>
+                  <label className={`block text-base font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>নোট (ঐচ্ছিক)</label>
+                  <input
+                    type="text"
+                    value={addNote}
+                    onChange={e => setAddNote(e.target.value)}
+                    placeholder="নোট (ঐচ্ছিক)"
+                    className={`w-full px-3 py-3 rounded-lg border text-lg ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:ring-2 focus:ring-green-500 focus:border-transparent focus:outline-none`}
+                  />
+                </div>
+                <motion.div 
+                  className="flex space-x-3"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowAddMoney(null)}
+                    className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                      darkMode 
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    বাতিল
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleAddMoney(showAddMoney)}
+                    className="flex-1 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                  >
+                    জমা করুন
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 25,
+                duration: 0.3 
+              }}
+              className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.h3 
+                className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+              >
+                লক্ষ্য মুছবেন?
+              </motion.h3>
+              <motion.p 
+                className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+              >
+                এই লক্ষ্যটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+              </motion.p>
+              <motion.div 
+                className="flex space-x-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
                     darkMode 
                       ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   বাতিল
-                </button>
-                <button
-                  onClick={() => handleAddMoney(showAddMoney)}
-                  className="flex-1 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
-                  জমা করুন
-                </button>
-              </div>
-            </div>
+                  মুছে ফেলুন
+                </motion.button>
+              </motion.div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}
-          >
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-              লক্ষ্য মুছবেন?
-            </h3>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
-              এই লক্ষ্যটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className={`flex-1 px-4 py-2 rounded-lg border ${
-                  darkMode 
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                বাতিল
-              </button>
-              <button
-                onClick={() => handleDelete(showDeleteConfirm)}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-              >
-                মুছে ফেলুন
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Toast Notification */}
       {toast && (
@@ -508,13 +574,16 @@ export const GoalManager: React.FC = () => {
       )}
 
       {/* Deposit Details Modal */}
-      {selectedGoalForDetails && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {selectedGoalForDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setSelectedGoalForDetails(null)}
+          >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -687,15 +756,19 @@ export const GoalManager: React.FC = () => {
           </motion.div>
         </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Edit Deposit Form Modal */}
-      {showEditForm && editingDeposit && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
+      <AnimatePresence>
+        {showEditForm && editingDeposit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={handleCancelEdit}
+          >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -814,6 +887,7 @@ export const GoalManager: React.FC = () => {
           </motion.div>
         </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

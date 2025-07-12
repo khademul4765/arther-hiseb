@@ -224,8 +224,168 @@ export const TransactionList: React.FC = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   function handlePrintTransactions() {
-    // TODO: Implement transaction print/export logic
-    alert('Print/export feature coming soon!');
+    // Get filtered transactions based on current filters
+    const filteredTransactions = transactions.filter(transaction => {
+      // Search filter
+      if (searchTerm && !transaction.note.toLowerCase().includes(searchTerm.toLowerCase()) && 
+          !transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !transaction.person?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      // Type filter
+      if (filterType && transaction.type !== filterType) {
+        return false;
+      }
+      
+      // Category filter
+      if (filterCategory && transaction.category !== filterCategory) {
+        return false;
+      }
+      
+      // Date range filter
+      if (filterStartDate && new Date(transaction.date) < new Date(filterStartDate)) {
+        return false;
+      }
+      if (filterEndDate && new Date(transaction.date) > new Date(filterEndDate)) {
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (filteredTransactions.length === 0) {
+      alert('প্রিন্ট করার জন্য কোন লেনদেন পাওয়া যায়নি।');
+      return;
+    }
+
+    // Helper to convert English digits to Bengali
+    const toBengaliDigits = (str: string | number) => String(str).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[Number(d)]);
+    
+    // Helper to pad numbers to two digits
+    const pad2 = (n: string | number) => n.toString().padStart(2, '0');
+    
+    // Helper to format date in Bengali with two digits for day and month
+    const formatDateBengali = (dateObj: Date) => {
+      const d = dateObj.getDate();
+      const m = dateObj.getMonth() + 1;
+      const y = dateObj.getFullYear();
+      return `${toBengaliDigits(String(pad2(d)))}/${toBengaliDigits(String(pad2(m)))}/${toBengaliDigits(String(y))}`;
+    };
+    
+    // Helper to format time in Bengali with two digits for hour and minute, AM/PM in English
+    const formatTimeBengali = (time: string) => {
+      if (!time) return '';
+      const [h, m] = time.split(':');
+      let hour = parseInt(h, 10);
+      const minute = m;
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12;
+      if (hour === 0) hour = 12;
+      return `${toBengaliDigits(String(pad2(hour)))}:${toBengaliDigits(String(pad2(minute)))} ${ampm}`;
+    };
+
+    // Calculate totals
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let totalTransfer = 0;
+
+    const tableRows = filteredTransactions.map(t => {
+      let income = '';
+      let expense = '';
+      let transfer = '';
+      
+      if (t.type === 'income') {
+        income = `<span style='color:#00B44C;font-weight:600;font-size:1.1em;'>${t.amount.toLocaleString()} ৳</span>`;
+        totalIncome += t.amount;
+      } else if (t.type === 'expense') {
+        expense = `<span style='color:#e53935;font-weight:600;font-size:1.1em;'>${t.amount.toLocaleString()} ৳</span>`;
+        totalExpense += t.amount;
+      } else if (t.type === 'transfer') {
+        transfer = `<span style='color:#2196F3;font-weight:600;font-size:1.1em;'>${t.amount.toLocaleString()} ৳</span>`;
+        totalTransfer += t.amount;
+      }
+      
+      return [
+        formatDateBengali(new Date(t.date)),
+        formatTimeBengali(t.time),
+        t.type === 'income' ? 'আয়' : t.type === 'expense' ? 'খরচ' : 'ট্রান্সফার',
+        t.category,
+        income,
+        expense,
+        transfer,
+        t.person || '—',
+        t.note || '—'
+      ];
+    });
+
+    // Create total row
+    let totalRow = `<tr>
+      <td colspan='4' style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>মোট</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>${toBengaliDigits(totalIncome.toLocaleString())} ৳</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>${toBengaliDigits(totalExpense.toLocaleString())} ৳</td>
+      <td style='padding:10px 8px;border:1px solid #e5e7eb;font-weight:700;text-align:center;vertical-align:middle;background:#00B44C;color:#fff;font-size:1.05rem;'>${toBengaliDigits(totalTransfer.toLocaleString())} ৳</td>
+      <td colspan='2' style='padding:10px 8px;border:1px solid #e5e7eb;background:#00B44C;'></td>
+    </tr>`;
+
+    // Helper to format the printed date/time in Bengali
+    const formatPrintedDateTime = (dateObj: Date) => {
+      const d = dateObj.getDate();
+      const m = dateObj.getMonth() + 1;
+      const y = dateObj.getFullYear();
+      const h = dateObj.getHours();
+      const min = dateObj.getMinutes();
+      const s = dateObj.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      let hour12 = h % 12;
+      if (hour12 === 0) hour12 = 12;
+      return `${toBengaliDigits(String(pad2(d)))}/${toBengaliDigits(String(pad2(m)))}/${toBengaliDigits(String(y))}, ${toBengaliDigits(String(pad2(hour12)))}:${toBengaliDigits(String(pad2(min)))}:${toBengaliDigits(String(pad2(s)))} ${ampm}`;
+    };
+
+    const appName = 'অর্থের হিসেব';
+    const creatorName = 'by MK Bashar';
+    const logoUrl = window.location.origin + '/logo.svg';
+    const tableHeaders = ['তারিখ', 'সময়', 'ধরন', 'ক্যাটেগরি', 'আয়', 'খরচ', 'ট্রান্সফার', 'ব্যক্তি/প্রতিষ্ঠান', 'নোট'];
+
+    let html = `
+      <div class="print-header" style="text-align:center;margin-bottom:16px;position:relative;z-index:1;">
+        <img src="${logoUrl}" alt="Logo" style="width:64px;height:64px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;" />
+        <div style="font-size:2rem;font-weight:bold;color:#00B44C;font-family:'Noto Serif Bengali',serif;margin-bottom:0px;">${appName}</div>
+        <div style="font-size:1.1rem;color:#666;margin-bottom:18px;font-family:'Noto Serif Bengali',serif;">${creatorName}</div>
+        <div style="font-size:1.5rem;font-weight:700;margin-top:18px;margin-bottom:8px;font-family:'Noto Serif Bengali',serif;">লেনদেন রিপোর্ট</div>
+        <div style="font-size:1rem;color:#666;margin-bottom:8px;font-family:'Noto Serif Bengali',serif;">প্রিন্টের তারিখ: ${formatPrintedDateTime(new Date())}</div>
+        <div style="font-size:1rem;color:#666;margin-bottom:18px;font-family:'Noto Serif Bengali',serif;">মোট লেনদেন: ${toBengaliDigits(filteredTransactions.length)}টি</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows.map(row => `<tr>${row.map((cell,i) => `<td>${cell || ''}</td>`).join('')}</tr>`).join('')}
+          ${totalRow.replace('<tr>', '<tr class="total-row">')}
+        </tbody>
+      </table>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('পপআপ ব্লকার সক্রিয়। প্রিন্ট করার জন্য পপআপ অনুমতি দিন।');
+      return;
+    }
+    
+    printWindow.document.write(`<html><head><title>${appName} - লেনদেন রিপোর্ট</title>`);
+    printWindow.document.write('<meta charset="UTF-8">');
+    printWindow.document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">');
+    printWindow.document.write('<style>body{font-family:\'Noto Serif Bengali\',serif;background:#fff;padding:32px;} .print-header{margin-bottom:24px;} table{box-shadow:0 2px 8px #0001;border-radius:12px;overflow:hidden;width:100%;border-collapse:separate;border-spacing:0;margin-top:18px;} th,td{transition:background 0.2s;text-align:center;vertical-align:middle;} th{background:#00B44C;color:#fff;letter-spacing:0.5px;font-size:1.08rem;font-weight:700;padding:12px 8px;border:1px solid #e5e7eb;} td{font-size:1rem;padding:10px 8px;border:1px solid #e5e7eb;} tr:nth-child(even):not(.total-row){background:#f3fef6;} .total-row td{font-size:1.05rem;font-weight:700;background:#00B44C;color:#fff;} @media print { body { background: #fff !important; } }</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(html);
+    printWindow.document.write('<script>setTimeout(function(){window.print();window.onafterprint=function(){window.close();};},300);</script>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
   }
 
   // Format the date to always show two digits for the day in Bengali numerals

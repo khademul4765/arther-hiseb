@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account, Contact } from '../types';
+import { Transaction, Category, Budget, Goal, Loan, Notification, User, Account, Contact } from '../types/index';
 import { db } from '../config/firebase';
 import { collection, getDocs, query, where, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
@@ -73,8 +73,9 @@ interface StoreState {
   calculateBudgetSpent: () => void;
   recalculateAccountBalances: () => void;
   cleanupDuplicateCategories: (userId: string) => Promise<void>;
+  ensureLoanCategories: (userId: string) => Promise<void>;
   deleteAllUserData: () => Promise<void>;
-  addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
+  addContact: (contact: Omit<Contact, 'id' | 'userId' | 'createdAt'>) => Promise<any>;
   updateContact: (id: string, updates: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
 }
@@ -133,8 +134,9 @@ export const useStore = create<StoreState>()(
             if (userCategories.length === 0) {
               await get().initializeDefaultCategories(user.id);
             } else {
-              // Clean up any duplicate categories
+              // Clean up any duplicate categories and ensure loan categories exist
               await get().cleanupDuplicateCategories(user.id);
+              await get().ensureLoanCategories(user.id);
             }
 
             const userAccounts = get().accounts.filter(a => a.userId === user.id);
@@ -197,6 +199,13 @@ export const useStore = create<StoreState>()(
               } as Category;
             });
             set({ categories: categories });
+            
+            // Ensure loan categories exist for this user
+            if (categories.length > 0) {
+              setTimeout(() => {
+                get().ensureLoanCategories(userId);
+              }, 500);
+            }
           });
 
           // Setup listeners for budgets
@@ -259,6 +268,19 @@ export const useStore = create<StoreState>()(
               } as Notification;
             });
             set({ notifications: notifications });
+          });
+
+          // Setup listeners for contacts
+          const contactsQuery = query(collection(db, 'contacts'), where('userId', '==', userId));
+          onSnapshot(contactsQuery, (snapshot) => {
+            const contacts: Contact[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...convertTimestampsToDate(data)
+              } as Contact;
+            });
+            set({ contacts: contacts });
           });
         } catch (error) {
           console.error('Error fetching user data from Firestore:', error);
@@ -539,20 +561,6 @@ export const useStore = create<StoreState>()(
             priority: 'medium',
             isRead: false
           });
-        }
-        // AI notification: unusual income
-        if (transaction.type === 'income') {
-          const last10Incomes = transactions.filter(t => t.type === 'income').slice(-10);
-          const avgIncome = last10Incomes.length > 0 ? last10Incomes.reduce((sum, t) => sum + Number(t.amount), 0) / last10Incomes.length : 0;
-          if (transactionAmount >= 2 * avgIncome && avgIncome > 0) {
-            get().addNotification({
-              title: 'অস্বাভাবিক আয়',
-              message: `এই আয় (${transactionAmount.toLocaleString()} ৳) সাম্প্রতিক গড়ের চেয়ে অনেক বেশি!`,
-              type: 'insight',
-              priority: 'medium',
-              isRead: false
-            });
-          }
         }
         // AI notification: category overspending (monthly)
         const now = new Date();
@@ -1146,9 +1154,11 @@ export const useStore = create<StoreState>()(
           { name: 'বিনোদন', color: '#45B7D1', icon: '🎬', type: 'expense', isDefault: true },
           { name: 'স্বাস্থ্য', color: '#96CEB4', icon: '🏥', type: 'expense', isDefault: true },
           { name: 'শিক্ষা', color: '#FFEAA7', icon: '📚', type: 'expense', isDefault: true },
+          { name: 'লোন / ইন্টারেস্ট', color: '#FF8C42', icon: '💳', type: 'expense', isDefault: true },
           { name: 'বেতন', color: '#DDA0DD', icon: '💰', type: 'income', isDefault: true },
           { name: 'ব্যবসা', color: '#98D8E8', icon: '🏢', type: 'income', isDefault: true },
           { name: 'বিনিয়োগ', color: '#F7DC6F', icon: '📈', type: 'income', isDefault: true },
+          { name: 'লোন / ইন্টারেস্ট', color: '#FF8C42', icon: '💳', type: 'income', isDefault: true },
         ];
 
         for (const category of defaultCategories) {
@@ -1233,6 +1243,52 @@ export const useStore = create<StoreState>()(
         }
       },
 
+      ensureLoanCategories: async (userId) => {
+        const userCategories = get().categories.filter(c => c.userId === userId);
+        const loanCategoryNames = ['লোন / ইন্টারেস্ট'];
+        
+        // Check if loan categories exist for both income and expense
+        const existingLoanCategories = userCategories.filter(c => 
+          loanCategoryNames.includes(c.name)
+        );
+        
+        const hasIncomeLoan = existingLoanCategories.some(c => c.type === 'income');
+        const hasExpenseLoan = existingLoanCategories.some(c => c.type === 'expense');
+        
+        console.log('Checking loan categories for user:', userId);
+        console.log('Has income loan category:', hasIncomeLoan);
+        console.log('Has expense loan category:', hasExpenseLoan);
+        
+        // Add missing loan categories
+        if (!hasIncomeLoan) {
+          console.log('Adding income loan category');
+          await addDoc(collection(db, 'categories'), {
+            name: 'লোন / ইন্টারেস্ট',
+            color: '#FF8C42',
+            icon: '💳',
+            type: 'income',
+            isDefault: true,
+            isSubcategory: false,
+            userId,
+            createdAt: serverTimestamp(),
+          });
+        }
+        
+        if (!hasExpenseLoan) {
+          console.log('Adding expense loan category');
+          await addDoc(collection(db, 'categories'), {
+            name: 'লোন / ইন্টারেস্ট',
+            color: '#FF8C42',
+            icon: '💳',
+            type: 'expense',
+            isDefault: true,
+            isSubcategory: false,
+            userId,
+            createdAt: serverTimestamp(),
+          });
+        }
+      },
+
       clearUserData: () => {
         const user = get().user;
         if (!user) return;
@@ -1245,7 +1301,8 @@ export const useStore = create<StoreState>()(
           budgets: state.budgets.filter(b => b.userId !== user.id),
           goals: state.goals.filter(g => g.userId !== user.id),
           loans: state.loans.filter(l => l.userId !== user.id),
-          notifications: state.notifications.filter(n => n.userId !== user.id)
+          notifications: state.notifications.filter(n => n.userId !== user.id),
+          contacts: state.contacts.filter(c => c.userId !== user.id)
         }));
       },
 
@@ -1268,6 +1325,7 @@ export const useStore = create<StoreState>()(
           deleteUserDocs('goals'),
           deleteUserDocs('loans'),
           deleteUserDocs('notifications'),
+          deleteUserDocs('contacts'),
         ]);
         // Remove local storage
         localStorage.removeItem('orther-hiseb-storage');
@@ -1275,26 +1333,36 @@ export const useStore = create<StoreState>()(
         get().clearUserData();
       },
 
-      addContact: (contact) => set((state) => ({
-        contacts: [
-          ...state.contacts,
-          {
-            ...contact,
-            id: Math.random().toString(36).slice(2),
-            createdAt: new Date(),
-          },
-        ],
-      })),
+      addContact: async (contact) => {
+        const user = get().user;
+        if (!user) return;
+        const docRef = await addDoc(collection(db, 'contacts'), {
+          ...contact,
+          userId: user.id,
+          createdAt: serverTimestamp(),
+        });
+        
+        // Add notification for new contact
+        get().addNotification({
+          title: 'নতুন কন্ট্যাক্টস যোগ হয়েছে',
+          message: `${contact.name} সফলভাবে কন্ট্যাক্টস তালিকায় যোগ হয়েছে।`,
+          type: 'insight',
+          priority: 'low',
+          isRead: false
+        });
+        
+        return docRef;
+      },
 
-      updateContact: (id, updates) => set((state) => ({
-        contacts: state.contacts.map((c) =>
-          c.id === id ? { ...c, ...updates } : c
-        ),
-      })),
+      updateContact: async (id, updates) => {
+        await updateDoc(doc(db, 'contacts', id), {
+          ...updates,
+        });
+      },
 
-      deleteContact: (id) => set((state) => ({
-        contacts: state.contacts.filter((c) => c.id !== id),
-      })),
+      deleteContact: async (id) => {
+        await deleteDoc(doc(db, 'contacts', id));
+      },
     }),
     {
       name: 'orther-hiseb-storage',
